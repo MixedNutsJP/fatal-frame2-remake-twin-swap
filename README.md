@@ -122,9 +122,9 @@ Costumes are paired one-to-one in costume menu order (Mio's nth ↔ Mayu's nth).
 - **ムービーにも入れ替えを反映するには、オプションの「表示設定」→「ムービー中の衣装」を
   「現在の衣装」にします。** その場で描画されるので入れ替えた姿になります。「通常衣装」「DDX衣装」は、
   その衣装で録画された動画が再生されるので、元の姿のままです。
-  **For movies to show the swap, set the display option for the costume used in movies to the
-  current costume.** They are then rendered in the game; the other two choices (normal costume,
-  Digital Deluxe costume) play videos pre-recorded in those costumes.
+  **For movies to show the swap, set the option for the outfit shown in movies (display
+  settings) to "Current Outfit".** They are then rendered in the game; the other two choices
+  ("Default Outfit", "DDX Outfit") play videos pre-recorded in those outfits.
 - **紗重・八重は白い着物の 1 着だけです。** どの衣装を選んでもその姿になります（澪の 8 着目を除く）。
   歩いたときの表示（赤い縄を含む）を確認しています。縄は着物を少し突き抜けることがあるので、
   `Rope=0` で非表示にできます。2.1.0 では紗重と八重を取り違えていて、2.2.0 で直しました。

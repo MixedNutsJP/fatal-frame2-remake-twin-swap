@@ -432,13 +432,13 @@ Sae and Yae were checked walking around (including the red rope) with
 
 - **The preview in the costume menu also shows the swapped look.** The costume name
   and the preview not matching is expected with this mod
-- **For movies to show the swap as well, set the game's display option for the costume
-  used in movies to the current costume** (Options, display settings; the Japanese label
-  is "ムービー中の衣装" = "現在の衣装"). With that setting movies are rendered in the game,
+- **For movies to show the swap as well, set the game's option for the outfit shown in
+  movies to "Current Outfit"** (in Options, under the display settings; in Japanese,
+  "ムービー中の衣装" = "現在の衣装"). With that setting movies are rendered in the game,
   so they play with the swapped looks (checked with an ending movie). The other two
-  choices, the normal costume and the Digital Deluxe costume, play videos pre-recorded in
-  those costumes, so the original looks are shown. Even with the current costume selected,
-  a movie that only exists as a pre-recorded video would still show the original looks
+  choices, "Default Outfit" and "DDX Outfit", play videos pre-recorded in those outfits,
+  so the original looks are shown. Even with "Current Outfit", a movie that only exists
+  as a pre-recorded video would still show the original looks
 - Scenes that are always rendered in the game (conversations, event scenes and so on)
   show the swap whatever the setting
 - **Sae's and Yae's red rope may clip slightly through the kimono while walking.** It
