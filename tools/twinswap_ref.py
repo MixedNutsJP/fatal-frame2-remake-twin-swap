@@ -168,9 +168,39 @@ def merge_groups(g1m, grp, names):
     return bytes(g1m), b''.join(struct.pack('<8I', *r) for r in rows)
 
 
+def hide_groups(g1m, grp, names):
+    """指定した名前のグループに属する部品（サブメッシュ）のインデックス数を 0 にして、
+    どの表示設定でも描画されないようにする。g1m のサイズは変わらない。grp は変えない。"""
+    rows = [struct.unpack_from('<8I', grp, i) for i in range(0, len(grp), 32)]
+    g1m = bytearray(g1m)
+    p = g1mg_section(g1m, 0x10009)
+    q, ents = p + 0x30, []
+    while g1m[q:q + 1] == b'@':
+        n = struct.unpack_from('<I', g1m, q + 24)[0]
+        ents.append(struct.unpack_from('<%dI' % n, g1m, q + 28))
+        q += 28 + 4 * n
+    hide, keep, pos = set(), set(), 0
+    for r in rows:
+        for e in ents[pos:pos + r[5]]:
+            (hide if r[0] in names else keep).update(e)
+        pos += r[5]
+    for e in ents[pos:]:
+        keep.update(e)
+    assert hide and not (hide & keep), 'groups not found or parts shared'
+    sub = g1mg_section(g1m, 0x10008)
+    for s in hide:
+        struct.pack_into('<I', g1m, sub + 12 + 56 * s + 52, 0)   # +52 = インデックス数
+    return bytes(g1m)
+
+
 def face_fix(g1m, grp):
     """澪のモデルの顔（グループ 5526a88f）を常時表示にする"""
     return merge_groups(g1m, grp, (FACE_GROUP,))
+
+
+# 澪の夏のカーディガン（2 着目）の高精細モデルの目隠し
+BLINDFOLD_G1M = 0xd7774eef
+BLINDFOLD_GROUP = 0x7EB9F3BA
 
 
 # 紗重・八重のモデル（g1m, grp）。縄（部品 @1EED9A49）がグループ 768a168d と 6ad387ac にあり、
@@ -181,18 +211,30 @@ ROPE_GROUPS = (0x768A168D, 0x6AD387AC)
 
 # ---- 組み立て ----------------------------------------------------------------
 
-def build(folder, rdb, rdx, main, sub, rope=True):
+def build(folder, rdb, rdx, main, sub, rope=True, blindfold='default'):
     """(新しい rdb, 新しい rdx, fdata) を返す"""
     files = []
     for h in DBS:
         data, meta = read_entry(folder, rdb, rdx, h)
         files.append((h, assign_refs(data, main, sub), meta))
-    if sub == 'mio':
-        for g1m_h, grp_h in MIO_MODELS:
-            g1m, g1m_meta = read_entry(folder, rdb, rdx, g1m_h)
-            grp, grp_meta = read_entry(folder, rdb, rdx, grp_h)
-            g1m, grp = face_fix(g1m, grp)
-            files += [(g1m_h, g1m, g1m_meta), (grp_h, grp, grp_meta)]
+    for g1m_h, grp_h in MIO_MODELS:
+        names = []
+        if sub == 'mio':
+            names.append(FACE_GROUP)
+        if blindfold == 'show' and g1m_h == BLINDFOLD_G1M:
+            names.append(BLINDFOLD_GROUP)
+        hide = blindfold == 'hide' and g1m_h == BLINDFOLD_G1M
+        if not names and not hide:
+            continue
+        g1m, g1m_meta = read_entry(folder, rdb, rdx, g1m_h)
+        grp, grp_meta = read_entry(folder, rdb, rdx, grp_h)
+        if names:
+            g1m, grp = merge_groups(g1m, grp, names)
+        if hide:   # 目隠しの部品を描画されないようにする（顔を移した後の grp で範囲を引く）
+            g1m = hide_groups(g1m, grp, (BLINDFOLD_GROUP,))
+        files.append((g1m_h, g1m, g1m_meta))
+        if names:
+            files.append((grp_h, grp, grp_meta))
     for look in ('sae', 'yae'):
         if rope and look in (main, sub):
             g1m_h, grp_h = SAE_YAE_MODELS[look]

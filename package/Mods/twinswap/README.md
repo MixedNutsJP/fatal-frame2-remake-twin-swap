@@ -123,6 +123,7 @@ Native120FPSOption（`dinput8.dll` + `Mods\native120fps\`）や MouseWheelCamera
 | `Main` | 操作キャラ（本編の澪）の見た目。`mio`（澪）/ `mayu`（繭）/ `sae`（紗重）/ `yae`（八重）。既定値 `mayu` |
 | `Sub` | 同行キャラ（本編の繭）の見た目。値は `Main` と同じ。既定値 `mio` |
 | `Rope` | 紗重・八重の赤い縄。`1` = 表示（既定）/ `0` = 非表示 |
+| `Blindfold` | 澪の 2 着目（夏のカーディガン）の目隠し。`default` = ゲームのまま（既定）/ `show` = 常に表示 / `hide` = 常に非表示 |
 | `Enabled` | `1` = 有効 / `0` = 無効 |
 | `Log` | `1` = ログを出力 / `0` = 出力しない |
 
@@ -143,6 +144,14 @@ Native120FPSOption（`dinput8.dll` + `Mods\native120fps\`）や MouseWheelCamera
 衣装は、衣装メニューの並び順で 1 対 1 に対応させています。例えば、澪に 2 着目の
 衣装を着せると、操作キャラは繭の 2 着目の衣装の姿になります。
 
+- **澪の 2 着目（夏のカーディガン）の目隠し**は、`Blindfold` で表示を選べます（2.3.0）。
+  このモデルには白い目隠しが入っていて、普段は表示されません。姉妹を入れ替えてこの衣装を
+  選ぶと、取り憑かれて敵として現れる場面で目隠しが表示されます。気になる場合は `hide` で
+  消せます。`show` にすると、普段の操作中も目隠しを着けた姿になります。
+  - 目隠しが入っているのは高精細モデルだけです。離れて見たときは、`show` でも表示されません
+  - `hide` にすると、ゲームが本来目隠しを見せる場面でも表示されなくなります
+  - 録画済みの動画で流れるムービーには反映されません
+  - 入れ替えをしない設定（`Main=mio` / `Sub=mayu`）でも使えます
 - **SILENT HILL f とのコラボ衣装・アイテムは対象外です。** 澪の 8 着目
   （ネイビーセーラー）は繭側に対になる衣装が無いため入れ替えず、選ぶと澪の姿のままになります
 - アクセサリーは入れ替えの対象外です。入れ替えた姿にも、そのまま反映されます
@@ -224,7 +233,7 @@ GitHub の Issue で教えてください。
 `twinswap.log`：
 
 ```
-TwinSwap 2.2.0  Main=mayu Sub=mio Rope=1
+TwinSwap 2.3.0  Main=mayu Sub=mio Rope=1 Blindfold=default
 [OK] Registered with the loader
 [OK] Generated the swap data (...)
 ```
@@ -234,15 +243,16 @@ TwinSwap 2.2.0  Main=mayu Sub=mio Rope=1
 ```
 [OK] twinswap: loaded (1 file patches)
 [OK] File hook installed (...)
-[OK] twinswap: Main=mayu Sub=mio Rope=1 (3 files)
+[OK] twinswap: Main=mayu Sub=mio Rope=1 Blindfold=default (3 files)
 ```
 
-`[OK] Generated the swap data (...)` と `[OK] twinswap: Main=mayu Sub=mio Rope=1 (3 files)` は、
+`[OK] Generated the swap data (...)` と `[OK] twinswap: Main=mayu Sub=mio Rope=1 Blindfold=default (3 files)` は、
 入れ替え用のデータを作った起動でだけ出ます。2 回目以降の起動では、`loader.log` の
 最後の行が `[OK] Using the cached files (N)` になります。
 
-`Main=mio` / `Sub=mayu`（元のまま）や `Enabled=0` のときは、
-`[OK] Nothing to swap (disabled or Main=mio / Sub=mayu)` と出て、何も登録されません。
+`Enabled=0` のときと、`Main=mio` / `Sub=mayu`（元のまま）で `Blindfold=default` のときは、
+`[OK] Nothing to do (disabled, or Main=mio / Sub=mayu with Blindfold=default)` と出て、
+何も登録されません。
 
 不具合を報告するときは、GitHub の Issue で `twinswap.log` と `loader.log` の
 2 つを添付してください。
@@ -387,6 +397,7 @@ To disable temporarily, set `Enabled` to `0` in `twinswap.ini`.
 | `Main` | Look of the player character (Mio in the story). `mio` / `mayu` / `sae` / `yae`. Default `mayu` |
 | `Sub` | Look of the companion (Mayu in the story). Same values as `Main`. Default `mio` |
 | `Rope` | Sae's and Yae's red rope. `1` = show (default) / `0` = hide |
+| `Blindfold` | The blindfold on Mio's 2nd costume (summer cardigan). `default` = as the game does (default) / `show` = always shown / `hide` = never shown |
 | `Enabled` | `1` = on / `0` = off |
 | `Log` | `1` = write a log file / `0` = no log |
 
@@ -407,6 +418,15 @@ Any value other than `mio` / `mayu` / `sae` / `yae` leaves that character's orig
 Costumes are paired one-to-one in costume menu order. For example, when Mio wears
 her 2nd costume, the player character appears as Mayu in Mayu's 2nd costume.
 
+- **The blindfold on Mio's 2nd costume (summer cardigan)** can be controlled with
+  `Blindfold` (2.3.0). The model contains a white blindfold that is normally hidden. With
+  the twins swapped and this costume selected, it shows up in the scene where she appears
+  as a possessed enemy. Set `hide` to remove it, or `show` to have her wear it all the time.
+  - Only the high-detail model has the blindfold, so from a distance it is not shown even
+    with `show`
+  - With `hide`, it is also hidden in scenes where the game itself would show it
+  - Movies that play as pre-recorded video are not affected
+  - It also works without swapping (`Main=mio` / `Sub=mayu`)
 - **The SILENT HILL f collaboration costume and items are out of scope.** Mio's
   8th costume (the navy sailor outfit) has no counterpart on Mayu's side and is not
   swapped; with it selected, the player character keeps Mio's look
@@ -497,7 +517,7 @@ If the logs contain lines like these, the mod is working:
 `twinswap.log`:
 
 ```
-TwinSwap 2.2.0  Main=mayu Sub=mio Rope=1
+TwinSwap 2.3.0  Main=mayu Sub=mio Rope=1 Blindfold=default
 [OK] Registered with the loader
 [OK] Generated the swap data (...)
 ```
@@ -507,15 +527,16 @@ TwinSwap 2.2.0  Main=mayu Sub=mio Rope=1
 ```
 [OK] twinswap: loaded (1 file patches)
 [OK] File hook installed (...)
-[OK] twinswap: Main=mayu Sub=mio Rope=1 (3 files)
+[OK] twinswap: Main=mayu Sub=mio Rope=1 Blindfold=default (3 files)
 ```
 
-`[OK] Generated the swap data (...)` and `[OK] twinswap: Main=mayu Sub=mio Rope=1 (3 files)`
+`[OK] Generated the swap data (...)` and `[OK] twinswap: Main=mayu Sub=mio Rope=1 Blindfold=default (3 files)`
 appear only on a launch where the swap data is built. On later launches the last
 line of `loader.log` reads `[OK] Using the cached files (N)`.
 
-With `Main=mio` / `Sub=mayu` (vanilla) or `Enabled=0`, the log says
-`[OK] Nothing to swap (disabled or Main=mio / Sub=mayu)` and nothing is registered.
+With `Enabled=0`, or with `Main=mio` / `Sub=mayu` (vanilla) and `Blindfold=default`, the
+log says `[OK] Nothing to do (disabled, or Main=mio / Sub=mayu with Blindfold=default)`
+and nothing is registered.
 
 When reporting a problem, please open a GitHub Issue and attach both `twinswap.log`
 and `loader.log`.
@@ -555,10 +576,12 @@ redirect itself is done by the loader (details in the loader's README).
 
 - **SyobonAction** — 紗重・八重のスワップ Mod「Yae x Sae」を作っていただきました。紗重・八重の
   モデルの特定と、赤い縄の問題に気付く手がかりになりました。2.1.0 で紗重と八重を取り違えていた
-  ことの指摘と、縄の表示を切り替える案もいただきました（ファイルやコードは使っていません）。
+  ことの指摘と、縄の表示を切り替える案、夏のカーディガンの目隠しの情報と切り替えの案も
+  いただきました（ファイルやコードは使っていません）。
   Made the "Yae x Sae" swap mod, which helped identify Sae's and Yae's models and
   pointed out the missing red rope; also pointed out that 2.1.0 had Sae and Yae the
-  wrong way round and suggested the rope toggle (none of its files or code are used here).
+  wrong way round, suggested the rope toggle, and reported the blindfold on the summer
+  cardigan model and suggested its switch (none of its files or code are used here).
 
 ## License
 

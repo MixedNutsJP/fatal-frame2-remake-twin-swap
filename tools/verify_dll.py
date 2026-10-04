@@ -18,13 +18,17 @@ INI = """[Swap]
 Main=%s
 Sub=%s
 Rope=%d
+Blindfold=%s
 [General]
 Enabled=1
 Log=1
 """
-CASES = (('mayu', 'mio', 1), ('mio', 'mio', 1), ('mayu', 'mayu', 1),
-         ('sae', 'mio', 1), ('mayu', 'sae', 1), ('yae', 'sae', 1), ('sae', 'yae', 1), ('mio', 'yae', 1),
-         ('sae', 'yae', 0), ('mio', 'sae', 0))
+D = 'default'
+CASES = (('mayu', 'mio', 1, D), ('mio', 'mio', 1, D), ('mayu', 'mayu', 1, D),
+         ('sae', 'mio', 1, D), ('mayu', 'sae', 1, D), ('yae', 'sae', 1, D), ('sae', 'yae', 1, D),
+         ('mio', 'yae', 1, D), ('sae', 'yae', 0, D), ('mio', 'sae', 0, D),
+         ('mayu', 'mio', 1, 'show'), ('mayu', 'mio', 1, 'hide'), ('mayu', 'mayu', 1, 'show'),
+         ('mio', 'mayu', 1, 'hide'), ('mio', 'mayu', 1, 'show'))
 
 
 def sha(b):
@@ -43,21 +47,21 @@ def main():
     rdb = open(os.path.join(pkg, 'root.rdb'), 'rb').read()
     rdx = open(os.path.join(pkg, 'root.rdx'), 'rb').read()
     ok_all = True
-    for main_, sub, rope in CASES:
-        open(os.path.join(mod, 'twinswap.ini'), 'w').write(INI % (main_, sub, rope))
+    for main_, sub, rope, bf in CASES:
+        open(os.path.join(mod, 'twinswap.ini'), 'w').write(INI % (main_, sub, rope, bf))
         shutil.rmtree(os.path.join(root, 'cache'), ignore_errors=True)
         for log in (os.path.join(mod, 'twinswap.log'), os.path.join(root, 'loader.log')):
             if os.path.exists(log):
                 os.remove(log)
         subprocess.run([os.path.join(game, 'harness.exe')], cwd=game, check=True, capture_output=True)
         want = dict(zip(('root.rdb', 'root.rdx', '0x%08x.fdata' % R.FDATA_HASH),
-                        R.build(pkg, rdb, rdx, main_, sub, bool(rope))))
+                        R.build(pkg, rdb, rdx, main_, sub, bool(rope), bf)))
         for name, b in want.items():
             p = os.path.join(root, 'cache', 'fdata_package', name)
             got = open(p, 'rb').read() if os.path.exists(p) else b''
             same = got == b
             ok_all &= same
-            print('%-5s %-5s rope=%d %-18s %s  plugin=%s ref=%s' % (main_, sub, rope, name, 'OK ' if same else 'NG ', sha(got), sha(b)))
+            print('%-5s %-5s rope=%d %-7s %-18s %s  plugin=%s ref=%s' % (main_, sub, rope, bf, name, 'OK ' if same else 'NG ', sha(got), sha(b)))
         log = open(os.path.join(mod, 'twinswap.log'), encoding='utf-8-sig').read()
         if '[NG]' in log:
             ok_all = False

@@ -49,8 +49,8 @@ using mixednuts::Utf8;
 using mixednuts::Wr;
 using mixednuts::file::ReadAt;
 
-constexpr char     kVersion[]  = "2.2.0";
-constexpr char     kCacheTag[] = "twinswap-v4";   // 生成ロジックを変えたら上げる
+constexpr char     kVersion[]  = "2.3.0";
+constexpr char     kCacheTag[] = "twinswap-v6";   // 生成ロジックを変えたら上げる
 constexpr uint32_t kFdataHash  = 0xFFFE7510;
 
 const wchar_t kRdb[] = L"fdata_package\\root.rdb";
@@ -65,6 +65,11 @@ bool g_enabled = true;
 Look g_main = kMayu;   // 操作キャラ（本編の澪）の見た目
 Look g_sub  = kMio;    // 同行キャラ（本編の繭）の見た目
 bool g_rope = true;    // 紗重・八重の赤い縄を表示するか
+
+// 澪の夏のカーディガン（2 着目）の目隠し
+enum Blindfold { kBfDefault, kBfShow, kBfHide };
+const char* const kBlindfoldNames[] = {"default", "show", "hide"};
+Blindfold g_blindfold = kBfDefault;
 
 // ---- ファイル入出力 -----------------------------------------------------
 //
@@ -123,6 +128,16 @@ const uint32_t kMioModels[14][2] = {
     {0x16741A74, 0x1D63ABF2}, {0x00A552EA, 0x0794E468}};
 
 constexpr uint32_t kFaceGroup = 0x5526A88F;
+
+// 澪の夏のカーディガン（2 着目）の高精細モデルには、白い目隠し（グループ 7eb9f3ba、部品
+// @1EED9A49）が入っている。普段は表示されないが、姉妹を入れ替えていると、取り憑かれて
+// 敵として現れる場面などで表示される。
+//   show: 目隠しを常時表示のグループ 0 へ移す（顔や縄と同じ方法）
+//   hide: 目隠しの部品のインデックス数を 0 にして、描画されないようにする。
+//         表示プリセットの 4 番目（この衣装だけ目隠しのグループを含む）からグループ名を
+//         外す方法も試したが、上の場面では消えなかった（別の経路で表示されている）
+constexpr uint32_t kBlindfoldG1m   = 0xD7774EEF;
+constexpr uint32_t kBlindfoldGroup = 0x7EB9F3BA;
 
 // 紗重・八重のモデルの {g1m, grp}。縄（部品 @1EED9A49）がグループ 768a168d と 6ad387ac にあり、
 // 双子のキャラはこの 2 つを表示しないので、顔と同じ方法で常時表示のグループ 0 へ移す。
@@ -405,6 +420,63 @@ bool AddMerged(const Source& src, const uint32_t model[2], const uint32_t* names
     return true;
 }
 
+// 指定した名前のグループに属する部品（サブメッシュ）のインデックス数を 0 にして、
+// どの表示設定でも描画されないようにする。grp は読むだけで、g1m のサイズは変わらない。
+// 部品がほかのグループからも使われている場合は、巻き添えを避けて何もしない
+bool HideGroups(File& g1m, const File& grp, const uint32_t* names, size_t count)
+{
+    const auto& gd = grp.data;
+    if (gd.size() < 32 || gd.size() % 32) return false;
+    const size_t groups = gd.size() / 32;
+
+    auto& d = g1m.data;
+    size_t lod = 0, sub = 0;
+    if (!G1mgSection(d, 0x10009, lod) || !G1mgSection(d, 0x10008, sub))
+    {
+        Log("[NG] g1m 0x%08X: no LOD or submesh section", g1m.hash);
+        return false;
+    }
+    const uint32_t nsub = Rd<uint32_t>(&d[sub + 8]);
+    if (sub + 12 + 56ull * nsub > d.size()) return false;
+
+    // LOD エントリを順に読み、grp の範囲から、隠す部品とそれ以外の部品を分ける
+    std::vector<bool> hide(nsub, false), keep(nsub, false);
+    size_t q = lod + 0x30, group = 0, left = Rd<uint32_t>(&gd[0x14]);
+    bool any = false;
+    while (q + 28 <= d.size() && d[q] == '@')
+    {
+        const uint32_t n = Rd<uint32_t>(&d[q + 24]);
+        if (q + 28 + 4ull * n > d.size()) return false;
+        while (group < groups && left == 0)
+            left = ++group < groups ? Rd<uint32_t>(&gd[group * 32 + 0x14]) : 0;
+        bool target = false;
+        if (group < groups)
+        {
+            for (size_t k = 0; k < count; ++k)
+                if (Rd<uint32_t>(&gd[group * 32]) == names[k]) target = true;
+            --left;
+        }
+        for (uint32_t i = 0; i < n; ++i)
+        {
+            const uint32_t s = Rd<uint32_t>(&d[q + 28 + 4 * i]);
+            if (s >= nsub) return false;
+            (target ? hide : keep)[s] = true;
+        }
+        any = any || target;
+        q += 28 + 4ull * n;
+    }
+    if (!any) { Log("[NG] grp 0x%08X: the groups to hide are not found", grp.hash); return false; }
+    for (uint32_t s = 0; s < nsub; ++s)
+        if (hide[s] && keep[s])
+        {
+            Log("[NG] g1m 0x%08X: part %u is shared with other groups", g1m.hash, s);
+            return false;
+        }
+    for (uint32_t s = 0; s < nsub; ++s)
+        if (hide[s]) Wr<uint32_t>(&d[sub + 12 + 56 * s + 52], 0);   // +52 = インデックス数
+    return true;
+}
+
 // ---- 生成 ---------------------------------------------------------------
 
 // 現在の内容を丸ごと読む（先に読み込まれた Mod の改変を含む）
@@ -445,16 +517,31 @@ bool Generate()
         files.push_back(std::move(f));
     }
     int fixed = 0;
-    if (g_sub == kMio)   // 澪のモデルを同行キャラに付けるときだけ顔を直す
+    // 澪のモデル: 同行キャラに付けるなら顔を、Blindfold=show なら夏のカーディガンの目隠しを、
+    // 常時表示のグループ 0 へ移す。Blindfold=hide なら目隠しの部品を描画されないようにする
+    for (auto& m : kMioModels)
     {
-        for (auto& m : kMioModels)
-        {
-            bool merged = false;
-            if (!AddMerged(src, m, &kFaceGroup, 1, files, merged)) return false;
-            if (merged) ++fixed;
-            else Log("[NG] Could not fix the face of model 0x%08X; Mio's face may be missing in"
-                     " that costume when she is the companion", m[0]);
-        }
+        uint32_t names[2];
+        size_t n = 0;
+        const bool blindfoldModel = m[0] == kBlindfoldG1m;
+        if (g_sub == kMio) names[n++] = kFaceGroup;
+        if (g_blindfold == kBfShow && blindfoldModel) names[n++] = kBlindfoldGroup;
+        const bool hide = g_blindfold == kBfHide && blindfoldModel;
+        if (!n && !hide) continue;
+
+        File g1m, grp;
+        if (!ReadEntry(src, m[0], g1m) || !ReadEntry(src, m[1], grp)) return false;
+        const bool merged = n && MergeGroups(g1m, grp, names, n);
+        if (n && !merged)
+            Log("[NG] Could not fix model 0x%08X; Mio's face (as the companion) or her"
+                " blindfold may not be shown as set in that costume", m[0]);
+        // 顔を移した後の grp で、目隠しのグループの範囲を引く
+        const bool hidden = hide && HideGroups(g1m, grp, &kBlindfoldGroup, 1);
+        if (hide && !hidden) Log("[NG] Could not hide the blindfold of model 0x%08X", m[0]);
+        if (!merged && !hidden) continue;
+        files.push_back(std::move(g1m));
+        if (merged) files.push_back(std::move(grp));
+        ++fixed;
     }
     // 紗重・八重は縄のグループを常時表示にする（双子のキャラはこの 2 つを表示しない）
     for (Look look : {kSae, kYae})
@@ -555,8 +642,8 @@ int GenerateSwap(void*, const MixedNutsPatchIo* io, char* note, size_t cap)
         return 0;
     }
     Log("     (took %lu ms)", GetTickCount() - t0);
-    sprintf_s(note, cap, "Main=%s Sub=%s Rope=%d", kLookNamesA[g_main], kLookNamesA[g_sub],
-              g_rope ? 1 : 0);
+    sprintf_s(note, cap, "Main=%s Sub=%s Rope=%d Blindfold=%s", kLookNamesA[g_main],
+              kLookNamesA[g_sub], g_rope ? 1 : 0, kBlindfoldNames[g_blindfold]);
     return 1;
 }
 
@@ -583,6 +670,13 @@ void LoadConfig()
     g_main = ReadLook(file, L"Main", kMayu, kMio);
     g_sub  = ReadLook(file, L"Sub", kMio, kMayu);
     g_rope = ini::Bool(file, L"Swap", L"Rope", true);
+
+    const std::wstring bf = ini::String(file, L"Swap", L"Blindfold", L"default");
+    if (_wcsicmp(bf.c_str(), L"show") == 0) g_blindfold = kBfShow;
+    else if (_wcsicmp(bf.c_str(), L"hide") == 0) g_blindfold = kBfHide;
+    else if (_wcsicmp(bf.c_str(), L"default") != 0)
+        Log("[NG] [Swap] Blindfold=%s is not default, show or hide; using default",
+            Utf8(bf).c_str());
 }
 
 } // namespace
@@ -595,20 +689,20 @@ MIXEDNUTS_PLUGIN_EXPORT int WINAPI MixedNutsPluginInit(const MixedNutsApi* api)
     g_api    = api;
     g_modDir = api->pluginDir;
     LoadConfig();
-    Log("TwinSwap %s  Main=%s Sub=%s Rope=%d", kVersion, kLookNamesA[g_main], kLookNamesA[g_sub],
-        g_rope ? 1 : 0);
+    Log("TwinSwap %s  Main=%s Sub=%s Rope=%d Blindfold=%s", kVersion, kLookNamesA[g_main],
+        kLookNamesA[g_sub], g_rope ? 1 : 0, kBlindfoldNames[g_blindfold]);
 
-    // 見た目が元のままなら何もしない
-    if (!g_enabled || (g_main == kMio && g_sub == kMayu))
+    // 見た目が元のままで、目隠しの設定も既定なら何もしない
+    if (!g_enabled || (g_main == kMio && g_sub == kMayu && g_blindfold == kBfDefault))
     {
-        Log("[OK] Nothing to swap (disabled or Main=mio / Sub=mayu)");
+        Log("[OK] Nothing to do (disabled, or Main=mio / Sub=mayu with Blindfold=default)");
         return 1;
     }
 
     // tag には結果に影響する設定も入れる。変わればローダーが作り直す
-    static char tag[64];
-    sprintf_s(tag, "%s main=%s sub=%s rope=%d", kCacheTag, kLookNamesA[g_main], kLookNamesA[g_sub],
-              g_rope ? 1 : 0);
+    static char tag[96];
+    sprintf_s(tag, "%s main=%s sub=%s rope=%d blindfold=%s", kCacheTag, kLookNamesA[g_main],
+              kLookNamesA[g_sub], g_rope ? 1 : 0, kBlindfoldNames[g_blindfold]);
     static const wchar_t* const targets[] = { kRdb, kRdx, nullptr };
     const MixedNutsPatch patch{ targets, tag, &GenerateSwap, nullptr };
     if (!api->RegisterPatch(api, &patch))

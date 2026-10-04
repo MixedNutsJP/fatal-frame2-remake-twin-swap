@@ -88,6 +88,7 @@ at 1.x, update them all at once; see the loader's README for details. You may co
 | `Main` | 操作キャラ（本編の澪）の見た目。`mio` / `mayu` / `sae` / `yae`、既定 `mayu` / Look of the player character (Mio in the story). Default `mayu` |
 | `Sub` | 同行キャラ（本編の繭）の見た目。値は `Main` と同じ、既定 `mio` / Look of the companion (Mayu in the story). Same values, default `mio` |
 | `Rope` | 紗重・八重の赤い縄。`1` = 表示（既定）/ `0` = 非表示 / Sae's and Yae's red rope. `1` = show (default) / `0` = hide |
+| `Blindfold` | 澪の 2 着目（夏のカーディガン）の目隠し。`default` = ゲームのまま（既定）/ `show` = 常に表示 / `hide` = 常に非表示 / The blindfold on Mio's 2nd costume (summer cardigan). `default` = as the game does (default) / `show` = always shown / `hide` = never shown |
 | `Enabled` | `1` = 有効 on / `0` = 無効 off |
 | `Log` | `1` = ログを出力 write a log / `0` = 出力しない no log |
 
@@ -107,6 +108,12 @@ at 1.x, update them all at once; see the loader's README for details. You may co
 衣装は衣装メニューの並び順で 1 対 1 に対応させています（澪の n 着目 ↔ 繭の n 着目）。
 Costumes are paired one-to-one in costume menu order (Mio's nth ↔ Mayu's nth).
 
+- **澪の 2 着目（夏のカーディガン）の目隠し**は `Blindfold` で選べます（2.3.0）。姉妹を入れ替えて
+  この衣装を選ぶと、取り憑かれて敵として現れる場面で目隠しが出ます。`hide` で消せ、`show` で常に
+  表示できます。目隠しがあるのは高精細モデルだけです。
+  **The blindfold on Mio's 2nd costume (summer cardigan)** is controlled with `Blindfold`
+  (2.3.0). With the twins swapped and this costume selected it shows up where she appears as a
+  possessed enemy; `hide` removes it and `show` keeps it on. Only the high-detail model has it.
 - **SILENT HILL f とのコラボ衣装・アイテムは対象外です。** 澪の 8 着目は繭側に対が無いため
   入れ替えません。
   **The SILENT HILL f collaboration costume and items are out of scope.** Mio's 8th
@@ -282,6 +289,21 @@ groups by number, but cutscenes seem to apply the model definition's display pre
 name, so it shows up there. Zeroing the parts' index counts would hide it everywhere, but also
 on the real Sae and Yae, who use the same models, so that is not done.
 
+### 目隠し / The blindfold
+
+澪の 2 着目（夏のカーディガン）の高精細モデル（g1m `0xD7774EEF`）には、白い目隠しが表示グループ
+`7EB9F3BA`（部品 `@1EED9A49`）として入っています。`Blindfold=show` は、顔や縄と同じ方法でグループ 0
+へ移します。`Blindfold=hide` は、目隠しの部品（サブメッシュ）のインデックス数を 0 にして、どの経路で
+グループが選ばれても描画されないようにします。表示プリセットの 4 番目（この衣装だけ目隠しの
+グループを含む）からグループ名を外す方法も試しましたが、取り憑かれて現れる場面では消えませんでした。
+
+The high-detail model of Mio's 2nd costume (g1m `0xD7774EEF`) contains a white blindfold as
+display group `7EB9F3BA` (part `@1EED9A49`). `Blindfold=show` moves it into group 0, the same way
+as the face and the rope. `Blindfold=hide` sets the index count of the blindfold's submeshes to
+0, so nothing is drawn whichever way the group gets selected. Removing the group name from the
+4th display preset (the only place that lists it) was tried first, but did not hide it in the
+possessed-enemy scene.
+
 ### ファイルの差し替え / Serving the data
 
 TwinSwap は root.rdb / root.rdx をローダーに登録します。ゲームがどちらかを最初に開くとき、
@@ -339,11 +361,12 @@ The archive format (rdb / rdx / fdata) was understood from eArmada8's
 [Yumia fdata tools](https://github.com/eArmada8/yumia_fdata_tools).
 
 紗重・八重への対応では、SyobonAction 氏の Mod「Yae x Sae」がモデルの特定と赤い縄の問題に
-気付く手がかりになりました。2.1.0 での紗重・八重の取り違えの指摘と、縄の表示を切り替える案も
-いただきました（ファイルやコードは使っていません）。
+気付く手がかりになりました。2.1.0 での紗重・八重の取り違えの指摘と、縄の表示を切り替える案、
+夏のカーディガンの目隠しの情報と切り替えの案もいただきました（ファイルやコードは使っていません）。
 SyobonAction's "Yae x Sae" mod helped identify Sae's and Yae's models and pointed out the
 missing red rope; SyobonAction also pointed out that 2.1.0 had Sae and Yae the wrong way
-round and suggested the rope toggle (none of its files or code are used here).
+round, suggested the rope toggle, and reported the blindfold on the summer cardigan model and
+suggested its switch (none of its files or code are used here).
 
 ## ライセンス / License
 
