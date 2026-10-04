@@ -122,10 +122,16 @@ Costumes are paired one-to-one in costume menu order (Mio's nth ↔ Mayu's nth).
 - **紗重・八重は白い着物の 1 着だけです。** どの衣装を選んでもその姿になります（澪の 8 着目を除く）。
   歩いたときの表示（赤い縄を含む）を確認しています。縄は着物を少し突き抜けることがあるので、
   `Rope=0` で非表示にできます。2.1.0 では紗重と八重を取り違えていて、2.2.0 で直しました。
+  **既知の不具合：`Rope=0` でも、カットシーンでは縄が表示されます**（消えるのは操作中だけ）。
+  カットシーンでも消すにはモデル自体を書き換える必要があり、そうするとイベントに登場する
+  本来の紗重・八重の縄も消えるため、今の仕組みでは回避が難しく、対応の予定は未定です。
   **Sae and Yae have a single outfit (the white kimono)**, shown whichever costume is
   selected (except Mio's 8th). Checked walking around, including the red rope, which may
   clip slightly through the kimono; `Rope=0` hides it. 2.1.0 had Sae and Yae the wrong way
-  round; fixed in 2.2.0.
+  round; fixed in 2.2.0. **Known issue: with `Rope=0` the rope still appears in cutscenes**
+  (it is hidden only during gameplay). Hiding it there too would mean rewriting the model
+  itself, which would also remove the rope from the real Sae and Yae in events; this is
+  hard to avoid with the way the mod works, so no fix is planned for now.
 
 ## 他の Mod との併用 / Using it with other mods
 
@@ -253,7 +259,10 @@ Neither changes the file size. It is applied to Mio's 7 costumes × 2 models whe
 `sae` / `yae` を指定した枠は、全衣装の高精細・軽量ともこの定義を指します。顔は常時表示の
 グループにあるので、顔の修正は要りません。赤い縄（部品 `@1EED9A49`）はグループ `768A168D` と
 `6AD387AC` にあり、澪・繭のキャラは表示しないので、顔と同じ方法でグループ 0 へ移します
-（`Rope=0` のときは移しません）。
+（`Rope=0` のときは移しません。操作中は澪・繭のキャラが表示グループを番号で指定するので縄は
+出ませんが、カットシーンではモデル定義の表示プリセットがグループ名で適用されるらしく、縄が
+出ます。部品のインデックス数を 0 にすれば消せますが、同じモデルを使う本来の紗重・八重の縄も
+消えるので採用していません）。
 
 Sae and Yae each have one model definition, the white kimono they wear while alive (Sae
 `0x47095B30` / g1m `0x9649ABE6`, Yae `0xAA5CC277` / g1m `0xE92E0AFF`). Sae only has the rope
@@ -262,6 +271,10 @@ fought in the game is a different, blood-stained model). A slot set to `sae` / `
 costume, high and low detail alike. Their faces are already in the always-visible group.
 The red rope (part `@1EED9A49`) sits in groups `768A168D` and `6AD387AC`, which the
 twins never show, so it is moved into group 0 the same way as the face (not with `Rope=0`).
+With `Rope=0` the rope stays hidden during gameplay, where the twins' characters pick display
+groups by number, but cutscenes seem to apply the model definition's display presets by group
+name, so it shows up there. Zeroing the parts' index counts would hide it everywhere, but also
+on the real Sae and Yae, who use the same models, so that is not done.
 
 ### ファイルの差し替え / Serving the data
 

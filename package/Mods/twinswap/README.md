@@ -170,6 +170,11 @@ GitHub の Issue で教えてください。
   ただし一部のムービーは録画済みの動画ファイルなので、元の姿のまま流れます
 - **紗重・八重の赤い縄は、歩くと着物を少し突き抜けることがあります。** 紗重・八重本来の
   体の動きに合わせて作られた部品のためです。気になる場合は `Rope=0` で非表示にできます
+- **既知の不具合：`Rope=0` にしても、カットシーンでは赤い縄が表示されます。** 縄が消えるのは
+  操作中だけです。カットシーンでは、紗重・八重のモデル側の表示設定が使われるためと考えられます。
+  カットシーンでも消すにはモデルのファイル自体を書き換える必要がありますが、そうすると
+  イベントに登場する本来の紗重・八重の縄も一緒に消えてしまいます。入れ替えた姿だけ縄を消すのは、
+  今の仕組みでは回避が難しいため、対応の予定は未定です
 - `sae` / `yae` を選び `Rope=1` のときは、イベントで登場する紗重・八重も、赤い縄が常に表示
   される状態になります。本来は縄の一部を出さない場面でも、縄が見えることがあります
 - 2.1.0 では紗重と八重を取り違えていました。2.2.0 で直したので、`sae` / `yae` の見た目が
@@ -427,6 +432,12 @@ Sae and Yae were checked walking around (including the red rope) with
   Some movies, however, are pre-recorded video files and play with the original looks
 - **Sae's and Yae's red rope may clip slightly through the kimono while walking.** It
   was made for their own body movement. Set `Rope=0` to hide it
+- **Known issue: with `Rope=0` the red rope still appears in cutscenes.** It is hidden
+  only while you are controlling the character. Cutscenes appear to use the display
+  settings of Sae's and Yae's own models. Hiding it there as well would mean rewriting
+  the model files themselves, which would also remove the rope from the real Sae and
+  Yae who appear in events. Hiding it only on the swapped characters is hard to do with
+  the way this mod works, so there is no fix planned for now
 - With `sae` / `yae` selected and `Rope=1`, the Sae and Yae who appear in events also
   always show the whole red rope, even in scenes where part of it would normally be
   hidden
