@@ -166,8 +166,12 @@ GitHub の Issue で教えてください。
 
 - **衣装画面のプレビューも、入れ替えた後の姿で表示されます。** 衣装の名前と
   プレビューの姿が一致しないのは、この Mod の仕様です
-- ゲーム内で描画される場面（会話やイベントのシーンなど）には、入れ替えが反映されます。
-  ただし一部のムービーは録画済みの動画ファイルなので、元の姿のまま流れます
+- **ムービーにも入れ替えを反映するには、ゲームのオプションの「表示設定」→「ムービー中の衣装」を
+  「現在の衣装」にしてください。** この設定では、ムービーがその場で描画されるので、入れ替えた
+  姿で流れます（ED ムービーで確認）。「通常衣装」「DDX衣装」を選ぶと、その衣装で録画された
+  動画が再生されるため、元の姿のまま流れます。「現在の衣装」でも、録画済みの動画しか無い
+  ムービーがあれば、それは元の姿のままです
+- 会話やイベントなど、もともとゲーム内で描画される場面には、設定にかかわらず入れ替えが反映されます
 - **紗重・八重の赤い縄は、歩くと着物を少し突き抜けることがあります。** 紗重・八重本来の
   体の動きに合わせて作られた部品のためです。気になる場合は `Rope=0` で非表示にできます
 - **既知の不具合：`Rope=0` にしても、カットシーンでは赤い縄が表示されます。** 縄が消えるのは
@@ -428,8 +432,15 @@ Sae and Yae were checked walking around (including the red rope) with
 
 - **The preview in the costume menu also shows the swapped look.** The costume name
   and the preview not matching is expected with this mod
-- Scenes rendered in the game (conversations, event scenes and so on) show the swap.
-  Some movies, however, are pre-recorded video files and play with the original looks
+- **For movies to show the swap as well, set the game's display option for the costume
+  used in movies to the current costume** (Options, display settings; the Japanese label
+  is "ムービー中の衣装" = "現在の衣装"). With that setting movies are rendered in the game,
+  so they play with the swapped looks (checked with an ending movie). The other two
+  choices, the normal costume and the Digital Deluxe costume, play videos pre-recorded in
+  those costumes, so the original looks are shown. Even with the current costume selected,
+  a movie that only exists as a pre-recorded video would still show the original looks
+- Scenes that are always rendered in the game (conversations, event scenes and so on)
+  show the swap whatever the setting
 - **Sae's and Yae's red rope may clip slightly through the kimono while walking.** It
   was made for their own body movement. Set `Rope=0` to hide it
 - **Known issue: with `Rope=0` the red rope still appears in cutscenes.** It is hidden
