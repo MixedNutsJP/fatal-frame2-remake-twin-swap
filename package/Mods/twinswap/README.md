@@ -166,6 +166,11 @@ Native120FPSOption（`dinput8.dll` + `Mods\native120fps\`）や MouseWheelCamera
 
 ### ゲーム内での動作確認の範囲
 
+**ゲーム全体を通したテストはしていません。** 各機能は、歩き回ったときの表示、いくつかの場面、
+いくつかの衣装で確認しただけで、すべてのカットシーンは見ていません。とくに紗重・八重・千歳は、
+本来登場しない場面に出すことになります。表示がおかしい場面（とくにカットシーン）があれば、
+どの場面か、どの設定かを添えて、GitHub の Issue か Nexus のコメントで教えてください。
+
 ゲーム内で実際に確認できているのは、**初期衣装**と**和風ゴシックドレス**
 （澪の左翅・繭の右翅）の 2 組だけです。`Main` / `Sub` の 3 通りの組み合わせ、
 TAB メニュー、衣装画面、フォトモードを確認しています。
@@ -192,20 +197,17 @@ GitHub の Issue で教えてください。
 - 会話やイベントなど、もともとゲーム内で描画される場面には、設定にかかわらず入れ替えが反映されます
 - **紗重・八重の赤い縄は、歩くと着物を少し突き抜けることがあります。** 紗重・八重本来の
   体の動きに合わせて作られた部品のためです。気になる場合は `Rope=0` で非表示にできます
-- **既知の不具合：`Rope=0` にしても、カットシーンでは赤い縄が表示されます。** 縄が消えるのは
-  操作中だけです。カットシーンでは、紗重・八重のモデル側の表示設定が使われるためと考えられます。
-  カットシーンでも消すにはモデルのファイル自体を書き換える必要がありますが、そうすると
-  イベントに登場する本来の紗重・八重の縄も一緒に消えてしまいます。入れ替えた姿だけ縄を消すのは、
-  今の仕組みでは回避が難しいため、対応の予定は未定です
+- `Rope=0` にすると、2.4.0 からは、カットシーンでも赤い縄が出ないようにしました（2.3.0 までは、
+  消えるのは操作中だけでした）。ゲーム内では、まだ確認できていません
 - **肌の色を選べます（2.4.0）。** `ChitoseSkin=human` で千歳を生きている人の肌色に、
   `SaeYaeSkin=ghost` で紗重・八重を幽霊の白い肌にできます。変わるのは顔と手足の色だけで、
   顔立ちは元のままです。千歳は、目の周りの隈と唇の色に元の灰色が少し残ります
 - **既知の不具合：紗重・八重の着物の袖が、立ち止まっていてもなびき続けることがあります。**
   肌の色の設定によらず起き、原因は分かっていません
-- 千歳の姿や、千歳・紗重・八重の肌の色を選んでも、本編に登場する千歳・紗重・八重には影響しません
-  （Mod はモデルの写しを別に用意して使います）
-- `sae` / `yae` を選び `Rope=1`、`SaeYaeSkin=default` のときは、イベントで登場する紗重・八重も、
-  赤い縄が常に表示される状態になります。本来は縄の一部を出さない場面でも、縄が見えることがあります
+- 紗重・八重・千歳の姿、縄の表示、肌の色を選んでも、本編に登場する紗重・八重・千歳には
+  影響しません（Mod はモデルの写しを別に用意して使います）。2.3.0 までは、`sae` / `yae` を選び
+  `Rope=1` にすると、イベントで登場する紗重・八重の縄も常に表示されていましたが、2.4.0 で
+  解消しました
 - **千歳は双子より背が低く、モデルに足がありません。** 裾の下に何も描かれないのは、ゲームが
   持っている千歳のモデルの作りで、Mod の不具合ではありません
 - 千歳の姿で手をつなぐと、つなぐ瞬間に一瞬だけ背が伸びて、すぐ戻ることがあります
@@ -294,7 +296,7 @@ https://github.com/MixedNutsJP/fatal-frame2-remake-twin-swap/issues
 紗重・八重のモデルは、赤い縄を澪・繭に無い表示グループに置いていて、澪・繭のキャラは
 このグループを表示しません。顔と同じ方法で、縄を常時表示のグループへ移します。
 
-千歳と、肌の色を変えた紗重・八重は、本編にも登場するので、モデルの写しを作って使います。
+紗重・八重・千歳は、本編にも登場するので、モデルの写しを作って使います。
 写しは、見た目として使っていない方の双子の初期衣装のファイルに置きます。千歳は体が小さいので、
 写しの骨格を双子の動きに合わせて調整します。肌の色を変える設定では、顔と手足のテクスチャに、
 もう一方の肌の色味を移したものを起動時に作ります（千歳には紗重の、紗重・八重には千歳の色味）。
@@ -465,6 +467,12 @@ her 2nd costume, the player character appears as Mayu in Mayu's 2nd costume.
 
 ### What has been checked in game
 
+**This mod has not been tested through the whole game.** Each feature was checked while
+walking around, in a few scenes and in a few costumes, not in every cutscene. Sae, Yae and
+Chitose in particular are placed in scenes they were never made for. If something looks
+wrong - a cutscene especially - please tell me which scene and which settings, in a GitHub
+Issue or a comment on Nexus.
+
 Only two pairs have actually been checked in game: **the default costumes** and
 **the 7th costumes** (the Japanese-style gothic dresses; left wing for Mio, right
 wing for Mayu). All three `Main` / `Sub` combinations, the TAB menu, the costume
@@ -495,24 +503,19 @@ Chitose was checked walking, holding hands and aiming the camera with
   show the swap whatever the setting
 - **Sae's and Yae's red rope may clip slightly through the kimono while walking.** It
   was made for their own body movement. Set `Rope=0` to hide it
-- **Known issue: with `Rope=0` the red rope still appears in cutscenes.** It is hidden
-  only while you are controlling the character. Cutscenes appear to use the display
-  settings of Sae's and Yae's own models. Hiding it there as well would mean rewriting
-  the model files themselves, which would also remove the rope from the real Sae and
-  Yae who appear in events. Hiding it only on the swapped characters is hard to do with
-  the way this mod works, so there is no fix planned for now
+- From 2.4.0, `Rope=0` is meant to hide the red rope in cutscenes too (up to 2.3.0 it was
+  hidden only during gameplay). This has not been confirmed in game yet
 - **The skin tone can be chosen (2.4.0).** `ChitoseSkin=human` gives Chitose a living
   skin tone, and `SaeYaeSkin=ghost` gives Sae and Yae a ghost's pale skin. Only the colour
   of the face, hands and feet changes; the features stay as they are. On Chitose a little
   of the original grey remains around the eyes and on the lips
 - **Known issue: the sleeves of Sae's and Yae's kimono may keep swaying even while
   standing still.** It happens whatever the skin setting, and the cause is not known
-- Choosing Chitose's look, or the skin tones of Chitose, Sae and Yae, does not affect the
-  Chitose, Sae and Yae who appear in the story (the mod works on its own copies of their
-  models)
-- With `sae` / `yae` selected, `Rope=1` and `SaeYaeSkin=default`, the Sae and Yae who
-  appear in events also always show the whole red rope, even in scenes where part of it
-  would normally be hidden
+- Choosing the looks of Sae, Yae and Chitose, hiding the rope or changing the skin tones
+  does not affect the Sae, Yae and Chitose who appear in the story (the mod works on its own
+  copies of their models). Up to 2.3.0, with `sae` / `yae` selected and `Rope=1`, the Sae
+  and Yae who appear in events also always showed the whole red rope; 2.4.0 no longer does
+  that
 - **Chitose is shorter than the twins and her model has no feet.** Nothing being drawn
   below the hem is how the game's own model of her is made, not a fault of the mod
 - With Chitose's look, she may appear taller for a moment when the two take hands, then
@@ -607,9 +610,8 @@ Sae's and Yae's models keep the red rope in display groups that Mio's and Mayu's
 models do not have, so the twins never show them. The mod moves the rope into the
 always-visible group in the same way as the face.
 
-Chitose, and Sae and Yae with a changed skin tone, also appear in the story, so the mod
-works on copies of their models, kept in the default costume files of whichever twin's
-look is not in use.
+Sae, Yae and Chitose also appear in the story, so the mod works on copies of their
+models, kept in the default costume files of whichever twin's look is not in use.
 Chitose is small, so the skeleton of her copy is adjusted to the twins' animations.
 With a skin setting, the face and hand/foot textures are rebuilt at startup with the
 other's skin tone transferred onto them (Sae's for Chitose, Chitose's for Sae and Yae).

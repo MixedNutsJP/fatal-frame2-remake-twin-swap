@@ -108,6 +108,15 @@ at 1.x, update them all at once; see the loader's README for details. You may co
 
 ## 衣装と動作確認の範囲 / Costumes and what has been checked
 
+**ゲーム全体を通したテストはしていません。** 各機能は、歩き回ったときの表示、いくつかの場面、
+いくつかの衣装で確認しただけで、すべてのカットシーンは見ていません。とくに紗重・八重・千歳は、
+本来登場しない場面に出すことになります。表示がおかしい場面（とくにカットシーン）があれば、
+どの場面か、どの設定かを添えて教えてください。
+**This mod has not been tested through the whole game.** Each feature was checked while
+walking around, in a few scenes and in a few costumes, not in every cutscene. Sae, Yae and
+Chitose in particular are placed in scenes they were never made for. If something looks
+wrong - a cutscene especially - please report it with the scene and your settings.
+
 衣装は衣装メニューの並び順で 1 対 1 に対応させています（澪の n 着目 ↔ 繭の n 着目）。
 Costumes are paired one-to-one in costume menu order (Mio's nth ↔ Mayu's nth).
 
@@ -137,19 +146,16 @@ Costumes are paired one-to-one in costume menu order (Mio's nth ↔ Mayu's nth).
   ("Default Outfit", "DDX Outfit") play videos pre-recorded in those outfits.
 - **紗重・八重は白い着物の 1 着だけです。** どの衣装を選んでもその姿になります（澪の 8 着目を除く）。
   歩いたときの表示（赤い縄を含む）を確認しています。縄は着物を少し突き抜けることがあるので、
-  `Rope=0` で非表示にできます。2.1.0 では紗重と八重を取り違えていて、2.2.0 で直しました。
-  **既知の不具合：`Rope=0` でも、カットシーンでは縄が表示されます**（消えるのは操作中だけ）。
-  カットシーンでも消すにはモデル自体を書き換える必要があり、そうするとイベントに登場する
-  本来の紗重・八重の縄も消えるため、今の仕組みでは回避が難しく、対応の予定は未定です。
+  `Rope=0` で非表示にできます。2.4.0 からは、`Rope=0` でカットシーンでも縄が出ないようにしました
+  （2.3.0 までは操作中だけでした。ゲーム内では未確認です）。2.1.0 では紗重と八重を取り違えていて、
+  2.2.0 で直しました。
   **既知の不具合：紗重・八重の着物の袖が、立ち止まっていてもなびき続けることがあります。**
   肌の色の設定によらず起き、原因は分かっていません。
   **Sae and Yae have a single outfit (the white kimono)**, shown whichever costume is
   selected (except Mio's 8th). Checked walking around, including the red rope, which may
-  clip slightly through the kimono; `Rope=0` hides it. 2.1.0 had Sae and Yae the wrong way
-  round; fixed in 2.2.0. **Known issue: with `Rope=0` the rope still appears in cutscenes**
-  (it is hidden only during gameplay). Hiding it there too would mean rewriting the model
-  itself, which would also remove the rope from the real Sae and Yae in events; this is
-  hard to avoid with the way the mod works, so no fix is planned for now.
+  clip slightly through the kimono; `Rope=0` hides it. From 2.4.0, `Rope=0` is meant to hide
+  the rope in cutscenes too (up to 2.3.0 it was hidden only during gameplay; not yet confirmed
+  in game). 2.1.0 had Sae and Yae the wrong way round; fixed in 2.2.0.
   **Known issue: the sleeves of Sae's and Yae's kimono may keep swaying even while standing
   still.** It happens whatever the skin setting, and the cause is not known.
 - **千歳は着物の 1 着だけです**（2.4.0）。どの衣装を選んでもその姿になります（澪の 8 着目を除く）。
@@ -295,39 +301,41 @@ Neither changes the file size. It is applied to Mio's 7 costumes × 2 models whe
 紗重・八重は、白い着物（生前の姿）のモデル定義が 1 つずつあります（紗重 `0x47095B30` / g1m
 `0x9649ABE6`、八重 `0xAA5CC277` / g1m `0xE92E0AFF`）。腰に縄を巻くだけの方が紗重、縄が長く垂れて
 いる方が八重です。2.1.0 では、キャラの読み込み設定の表に載っている方を紗重と推定して取り違えて
-いました（ゲーム内で戦う紗重は、血の付いた白装束の別のモデルです）。
-`sae` / `yae` を指定した枠は、全衣装の高精細・軽量ともこの定義を指します。顔は常時表示の
-グループにあるので、顔の修正は要りません。赤い縄（部品 `@1EED9A49`）はグループ `768A168D` と
-`6AD387AC` にあり、澪・繭のキャラは表示しないので、顔と同じ方法でグループ 0 へ移します
-（`Rope=0` のときは移しません。操作中は澪・繭のキャラが表示グループを番号で指定するので縄は
-出ませんが、カットシーンではモデル定義の表示プリセットがグループ名で適用されるらしく、縄が
-出ます。部品のインデックス数を 0 にすれば消せますが、同じモデルを使う本来の紗重・八重の縄も
-消えるので採用していません）。
+いました（ゲーム内で戦う紗重は、血の付いた白装束の別のモデルです）。顔は常時表示のグループに
+あるので、顔の修正は要りません。
 
-`SaeYaeSkin=ghost` のときだけは、千歳と同じく、モデルの写しを使っていない方の双子の初期衣装の
-ファイルに置き、枠はそのモデル定義を指します（下の「千歳」「肌の色」を参照）。写しには、モデル
-ごとの kidsobjdb（補助の骨を動かす計算の定義。紗重・八重と双子で中身が違う）も一緒に置きます。
-袖がなびき続ける件（上の既知の不具合）は、写しを使っても使わなくても変わりませんでした。
-肌を変えないときは、2.3.0 までと同じ置き方のままにしています。
+2.4.0 からは、千歳と同じく、モデルの写しを使っていない方の双子の初期衣装のファイルに置き、
+`sae` / `yae` を指定した枠は、全衣装の高精細・軽量ともそのモデル定義を指します（下の「千歳」を
+参照）。写しには、モデルごとの kidsobjdb（補助の骨を動かす計算の定義。紗重・八重と双子で中身が
+違う）も一緒に置きます。本来の紗重・八重のファイルは変えません。
+
+赤い縄（部品 `@1EED9A49`）はグループ `768A168D` と `6AD387AC` にあり、澪・繭のキャラは表示
+しません。`Rope=1` では、顔と同じ方法で写しのグループ 0 へ移します。`Rope=0` では、目隠しと
+同じ方法で、写しの縄の部品のインデックス数を 0 にします（移さないだけだと、操作中は出ませんが、
+カットシーンではモデル定義の表示プリセットがグループ名で適用されるらしく、縄が出ました）。
+2.3.0 までは本来のモデルを直接書き換えていたので、`Rope=1` ではイベントに登場する紗重・八重の
+縄も常に表示され、`Rope=0` ではカットシーンの縄を消せませんでした。
 
 Sae and Yae each have one model definition, the white kimono they wear while alive (Sae
 `0x47095B30` / g1m `0x9649ABE6`, Yae `0xAA5CC277` / g1m `0xE92E0AFF`). Sae only has the rope
 tied around her waist; Yae's rope hangs down. 2.1.0 had them the wrong way round (the Sae
-fought in the game is a different, blood-stained model). A slot set to `sae` / `yae` points at that definition for every
-costume, high and low detail alike. Their faces are already in the always-visible group.
-The red rope (part `@1EED9A49`) sits in groups `768A168D` and `6AD387AC`, which the
-twins never show, so it is moved into group 0 the same way as the face (not with `Rope=0`).
-With `Rope=0` the rope stays hidden during gameplay, where the twins' characters pick display
-groups by number, but cutscenes seem to apply the model definition's display presets by group
-name, so it shows up there. Zeroing the parts' index counts would hide it everywhere, but also
-on the real Sae and Yae, who use the same models, so that is not done.
+fought in the game is a different, blood-stained model). Their faces are already in the
+always-visible group.
 
-Only with `SaeYaeSkin=ghost`, a copy of the model is kept in the default costume files of
-whichever twin's look is not in use, as for Chitose, and the slots point at that model
-definition (see "Chitose" and "Skin tone" below). The copy also brings its per-model kidsobjdb
-(the definition of the calculations that drive helper bones, which differs between Sae/Yae
-and the twins). The swaying sleeves (the known issue above) are the same with and without
-the copy. When the skin is left as it is, the placement is kept as it was up to 2.3.0.
+From 2.4.0 a copy of the model is kept in the default costume files of whichever twin's look
+is not in use, as for Chitose (see below), and a slot set to `sae` / `yae` points at that
+model definition for every costume, high and low detail alike. The copy also brings its
+per-model kidsobjdb (the definition of the calculations that drive helper bones, which
+differs between Sae/Yae and the twins). The real Sae's and Yae's files are left alone.
+
+The red rope (part `@1EED9A49`) sits in groups `768A168D` and `6AD387AC`, which the twins
+never show. With `Rope=1` it is moved into group 0 of the copy, the same way as the face.
+With `Rope=0` the index counts of the rope's parts in the copy are set to 0, the same way
+as the blindfold (just not moving it kept it hidden during gameplay, but cutscenes seem to
+apply the model definition's display presets by group name, and it showed up there). Up to
+2.3.0 the real models were rewritten directly, so with `Rope=1` the Sae and Yae who appear
+in events always showed the whole rope too, and with `Rope=0` the rope could not be hidden
+in cutscenes.
 
 ### 千歳 / Chitose
 

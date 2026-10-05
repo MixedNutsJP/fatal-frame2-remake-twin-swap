@@ -52,7 +52,7 @@ using mixednuts::Wr;
 using mixednuts::file::ReadAt;
 
 constexpr char     kVersion[]  = "2.4.0";
-constexpr char     kCacheTag[] = "twinswap-v22";   // 生成ロジックを変えたら上げる
+constexpr char     kCacheTag[] = "twinswap-v23";   // 生成ロジックを変えたら上げる
 constexpr uint32_t kFdataHash  = 0xFFFE7510;
 
 const wchar_t kRdb[] = L"fdata_package\\root.rdb";
@@ -115,25 +115,22 @@ const uint32_t kMayuDefs[7][2] = {
 // そのままでは体が 13.09 持ち上がって足が浮く。骨格を書き換えて合わせる（FitChitose）
 constexpr float kChitoseDrop = 87.25f - 74.16f;
 
-// 紗重・八重の、本来のモデル定義。肌の色を変えないときは、枠をこの定義へ向ける
-constexpr uint32_t kSaeDef = 0x47095B30;
-constexpr uint32_t kYaeDef = 0xAA5CC277;
-
-// 千歳と、肌の色を変えた紗重・八重は、モデルの写しを別のファイルに置いて使う。本来の千歳・紗重・
-// 八重（別の枠から同じモデルを使う）に影響させないため。置き場所は、見た目として使われていない
-// 双子の初期衣装（高精細・軽量）。双子の枠はすべてこの Mod が書き換えるので、そのモデル定義を
-// 指す枠は写しを使う見た目のものだけになる。
+// 紗重・八重・千歳は、モデルの写しを別のファイルに置いて使う。本来の紗重・八重・千歳（別の枠
+// から同じモデルを使う）に影響させないため。置き場所は、見た目として使われていない双子の
+// 初期衣装（高精細・軽量）。双子の枠はすべてこの Mod が書き換えるので、そのモデル定義を指す枠は
+// 写しを使う見た目のものだけになる。
 // モデル定義が参照するファイルのうち、g1m / grp / mtl / oid / ktid を写し元のもので上書きする
 // （oid は g1m のエントリの付属データが、ktid はモデル定義が間接的に参照している）。
 // db はモデルごとの kidsobjdb（補助の骨を動かす計算の定義が 1 個入っている）。紗重・八重は
 // 双子と中身が違うので、これも写す。千歳は双子のもので確認が取れているので写さない（0）。
-// 紗重・八重は、着物の袖が立ち止まっていてもなびき続ける。本来のモデル定義を使う 2.3.0 までの
-// 置き方でも、写しでも同じで、原因は分かっていない（写しの置き場所のモデル定義から、骨に揺れを
-// 与える設定を外しても、キャラごとの識別子を写し元のものにしても変わらなかった）。
-// 肌の色を変えない紗重・八重は、確認済みの 2.3.0 までの置き方のままにして、写しを使わない
+// 2.3.0 までは、紗重・八重は本来のモデル定義をそのまま使い、縄を表示するために本来のモデルを
+// 書き換えていた（イベントに登場する紗重・八重の縄も常に表示されていた）。
+// 紗重・八重は、着物の袖が立ち止まっていてもなびき続ける。2.3.0 までの置き方でも写しでも同じで、
+// 原因は分かっていない（置き場所のモデル定義から、骨に揺れを与える設定を外しても、キャラごとの
+// 識別子を写し元のものにしても変わらなかった）
 struct ModelFiles { uint32_t g1m, grp, mtl, oid, ktid, db; };
 
-// 写しを使う見た目 1 人ぶん。files は高精細・軽量（紗重・八重は 1 体だけなので同じものを並べる）。
+// 写しを使う見た目（紗重・八重・千歳）1 人ぶん。files は高精細・軽量（紗重・八重は 1 体だけなので同じものを並べる）。
 // faceObj / handObj は、それぞれの ktid の中で顔と手足のテクスチャを指すオブジェクト。
 // faceG1t / handG1t は、そのテクスチャの実ファイル
 struct Extra {
@@ -178,13 +175,10 @@ const Extra& ExtraOf(Look look)
 }
 
 // 肌の色を変えるか。千歳は人間の肌色に、紗重・八重は幽霊の肌色にできる
-bool SkinChanged(Look look)
-{
-    return look == kChitose ? g_chitoseHuman : (look == kSae || look == kYae) && g_saeYaeGhost;
-}
+bool SkinChanged(Look look) { return look == kChitose ? g_chitoseHuman : g_saeYaeGhost; }
 
-// 写しを使う見た目か。千歳は常に（骨格を書き換えるため）、紗重・八重は肌の色を変えるときだけ
-bool UsesCopy(Look look) { return look == kChitose || SkinChanged(look); }
+// 写しを使う見た目か
+bool UsesCopy(Look look) { return look == kSae || look == kYae || look == kChitose; }
 
 // 写しの置き場所。空いている双子を繭、澪の順に、Main、Sub の順で割り当てる。
 // 写しを使う見た目が 2 種類なら双子は 2 人とも空いていて、1 種類なら少なくとも 1 人は空いている
@@ -200,13 +194,7 @@ const Home& HomeFor(Look look)
 uint32_t DefFor(Look look, int costume, int detail)
 {
     if (UsesCopy(look)) return HomeFor(look).defs[detail];
-    switch (look)
-    {
-    case kMio:  return kMioDefs[costume][detail];
-    case kMayu: return kMayuDefs[costume][detail];
-    case kSae:  return kSaeDef;
-    default:    return kYaeDef;
-    }
+    return look == kMio ? kMioDefs[costume][detail] : kMayuDefs[costume][detail];
 }
 
 // 上の澪のモデル定義が使う {g1m, grp}
@@ -230,7 +218,8 @@ constexpr uint32_t kBlindfoldG1m   = 0xD7774EEF;
 constexpr uint32_t kBlindfoldGroup = 0x7EB9F3BA;
 
 // 紗重・八重の縄（部品 @1EED9A49）はグループ 768a168d と 6ad387ac にあり、双子のキャラは
-// この 2 つを表示しないので、顔と同じ方法で常時表示のグループ 0 へ移す。Rope=0 なら移さない
+// この 2 つを表示しないので、顔と同じ方法で常時表示のグループ 0 へ移す。Rope=0 なら、目隠しと
+// 同じ方法で縄の部品を描画されないようにする（どちらもモデルの写しに対して行う）
 const uint32_t kRopeGroups[] = {0x768A168D, 0x6AD387AC};
 
 // ---- rdb / rdx / fdata --------------------------------------------------
@@ -932,23 +921,6 @@ bool Generate()
     for (Look look : {kSae, kYae, kChitose})
     {
         if (g_main != look && g_sub != look) continue;
-        if (!UsesCopy(look))
-        {
-            // 本来のモデルをそのまま使う。縄のグループを常時表示にする（双子のキャラはこの 2 つを
-            // 表示しない）。本来の紗重・八重の縄も常に表示されるようになる
-            if (!g_rope) continue;
-            const ModelFiles& own = ExtraOf(look).files[0];
-            File g1m, grp;
-            if (!ReadEntry(src, own.g1m, g1m) || !ReadEntry(src, own.grp, grp)) return false;
-            if (MergeGroups(g1m, grp, kRopeGroups, sizeof(kRopeGroups) / sizeof(kRopeGroups[0])))
-            {
-                files.push_back(std::move(g1m));
-                files.push_back(std::move(grp));
-                ++fixed;
-            }
-            else Log("[NG] Could not show the rope of %s; she will appear without it", kLookNamesA[look]);
-            continue;
-        }
         // モデルの写しを、使っていない双子の初期衣装に置く。
         // 中身は写し元、エントリの付属データは置き場所のものを使う
         const Extra& ex = ExtraOf(look);
@@ -973,10 +945,16 @@ bool Generate()
                     return false;
                 }
             }
-            // 縄のグループを常時表示にする（双子のキャラはこの 2 つを表示しない）
-            else if (g_rope && !MergeGroups(copy[0], copy[1], kRopeGroups,
-                                            sizeof(kRopeGroups) / sizeof(kRopeGroups[0])))
-                Log("[NG] Could not show the rope of %s; she will appear without it", kLookNamesA[look]);
+            // 縄: 表示するなら、縄のグループを常時表示のグループ 0 へ移す（双子のキャラはこの 2 つを
+            // 表示しない）。表示しないなら、縄の部品を描画されないようにする（移さないだけだと、
+            // カットシーンではモデル定義の表示設定が使われて縄が出る）
+            else if (g_rope)
+            {
+                if (!MergeGroups(copy[0], copy[1], kRopeGroups, sizeof(kRopeGroups) / sizeof(kRopeGroups[0])))
+                    Log("[NG] Could not show the rope of %s; she will appear without it", kLookNamesA[look]);
+            }
+            else if (!HideGroups(copy[0], copy[1], kRopeGroups, sizeof(kRopeGroups) / sizeof(kRopeGroups[0])))
+                Log("[NG] Could not hide the rope of %s; it may appear in cutscenes", kLookNamesA[look]);
             if (skin && (!ReplaceObject(copy[4].data, ex.faceObj[k], home.slotObj[0]) ||
                          !ReplaceObject(copy[4].data, ex.handObj[k], home.slotObj[1])))
             {
