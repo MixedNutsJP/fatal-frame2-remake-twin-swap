@@ -141,6 +141,8 @@ Costumes are paired one-to-one in costume menu order (Mio's nth ↔ Mayu's nth).
   **既知の不具合：`Rope=0` でも、カットシーンでは縄が表示されます**（消えるのは操作中だけ）。
   カットシーンでも消すにはモデル自体を書き換える必要があり、そうするとイベントに登場する
   本来の紗重・八重の縄も消えるため、今の仕組みでは回避が難しく、対応の予定は未定です。
+  **既知の不具合：紗重・八重の着物の袖が、立ち止まっていてもなびき続けることがあります。**
+  肌の色の設定によらず起き、原因は分かっていません。
   **Sae and Yae have a single outfit (the white kimono)**, shown whichever costume is
   selected (except Mio's 8th). Checked walking around, including the red rope, which may
   clip slightly through the kimono; `Rope=0` hides it. 2.1.0 had Sae and Yae the wrong way
@@ -148,6 +150,8 @@ Costumes are paired one-to-one in costume menu order (Mio's nth ↔ Mayu's nth).
   (it is hidden only during gameplay). Hiding it there too would mean rewriting the model
   itself, which would also remove the rope from the real Sae and Yae in events; this is
   hard to avoid with the way the mod works, so no fix is planned for now.
+  **Known issue: the sleeves of Sae's and Yae's kimono may keep swaying even while standing
+  still.** It happens whatever the skin setting, and the cause is not known.
 - **千歳は着物の 1 着だけです**（2.4.0）。どの衣装を選んでもその姿になります（澪の 8 着目を除く）。
   千歳は双子より背が低く、モデルに足がありません。裾の下に何も描かれないのは、ゲーム本来の姿です。
   歩く・手をつなぐ・射影機を構える、を `chitose` / `chitose` と `chitose` / `mayu` で確認しています。
@@ -162,15 +166,12 @@ Costumes are paired one-to-one in costume menu order (Mio's nth ↔ Mayu's nth).
   `SaeYaeSkin=ghost` で紗重・八重を幽霊の白い肌にできます。変わるのは顔と手足の色だけで、
   顔立ちは元のままです。千歳は、目の周りの隈と唇の色に元の灰色が少し残ります。
   `chitose`（human）/ `sae`（ghost）の組み合わせで確認しています。本編に登場する千歳・紗重・八重
-  には影響しません。**既知の不具合：`SaeYaeSkin=ghost` のときは、紗重・八重の着物の袖が、本来より
-  少しなびきます**（原因は分かっていません）。
+  には影響しません。
   **The skin tone can be chosen** (2.4.0). `ChitoseSkin=human` gives Chitose a living skin
   tone, and `SaeYaeSkin=ghost` gives Sae and Yae a ghost's pale skin. Only the colour of the
   face, hands and feet changes; the features stay as they are. On Chitose a little of the
   original grey remains around the eyes and on the lips. Checked with `chitose` (human) /
   `sae` (ghost). The Chitose, Sae and Yae who appear in the story are not affected.
-  **Known issue: with `SaeYaeSkin=ghost`, the sleeves of Sae's and Yae's kimono sway a
-  little more than they should** (the cause is not known).
 
 ## 他の Mod との併用 / Using it with other mods
 
@@ -306,8 +307,8 @@ Neither changes the file size. It is applied to Mio's 7 costumes × 2 models whe
 `SaeYaeSkin=ghost` のときだけは、千歳と同じく、モデルの写しを使っていない方の双子の初期衣装の
 ファイルに置き、枠はそのモデル定義を指します（下の「千歳」「肌の色」を参照）。写しには、モデル
 ごとの kidsobjdb（補助の骨を動かす計算の定義。紗重・八重と双子で中身が違う）も一緒に置きます。
-それでも袖が本来より少しなびき、原因は分かっていません。そのため、肌を変えないときは写しを
-使いません。
+袖がなびき続ける件（上の既知の不具合）は、写しを使っても使わなくても変わりませんでした。
+肌を変えないときは、2.3.0 までと同じ置き方のままにしています。
 
 Sae and Yae each have one model definition, the white kimono they wear while alive (Sae
 `0x47095B30` / g1m `0x9649ABE6`, Yae `0xAA5CC277` / g1m `0xE92E0AFF`). Sae only has the rope
@@ -325,8 +326,8 @@ Only with `SaeYaeSkin=ghost`, a copy of the model is kept in the default costume
 whichever twin's look is not in use, as for Chitose, and the slots point at that model
 definition (see "Chitose" and "Skin tone" below). The copy also brings its per-model kidsobjdb
 (the definition of the calculations that drive helper bones, which differs between Sae/Yae
-and the twins). The sleeves still sway a little more than they should, for a reason not yet
-found, so the copy is not used when the skin is left as it is.
+and the twins). The swaying sleeves (the known issue above) are the same with and without
+the copy. When the skin is left as it is, the placement is kept as it was up to 2.3.0.
 
 ### 千歳 / Chitose
 

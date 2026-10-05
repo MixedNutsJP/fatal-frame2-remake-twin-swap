@@ -200,8 +200,8 @@ GitHub の Issue で教えてください。
 - **肌の色を選べます（2.4.0）。** `ChitoseSkin=human` で千歳を生きている人の肌色に、
   `SaeYaeSkin=ghost` で紗重・八重を幽霊の白い肌にできます。変わるのは顔と手足の色だけで、
   顔立ちは元のままです。千歳は、目の周りの隈と唇の色に元の灰色が少し残ります
-- **既知の不具合：`SaeYaeSkin=ghost` にすると、紗重・八重の着物の袖が、本来より少しなびきます。**
-  原因は分かっていません。肌を変えない設定（`default`）では起きません
+- **既知の不具合：紗重・八重の着物の袖が、立ち止まっていてもなびき続けることがあります。**
+  肌の色の設定によらず起き、原因は分かっていません
 - 千歳の姿や、千歳・紗重・八重の肌の色を選んでも、本編に登場する千歳・紗重・八重には影響しません
   （Mod はモデルの写しを別に用意して使います）
 - `sae` / `yae` を選び `Rope=1`、`SaeYaeSkin=default` のときは、イベントで登場する紗重・八重も、
@@ -505,9 +505,8 @@ Chitose was checked walking, holding hands and aiming the camera with
   skin tone, and `SaeYaeSkin=ghost` gives Sae and Yae a ghost's pale skin. Only the colour
   of the face, hands and feet changes; the features stay as they are. On Chitose a little
   of the original grey remains around the eyes and on the lips
-- **Known issue: with `SaeYaeSkin=ghost`, the sleeves of Sae's and Yae's kimono sway a
-  little more than they should.** The cause is not known. It does not happen with the skin
-  left as it is (`default`)
+- **Known issue: the sleeves of Sae's and Yae's kimono may keep swaying even while
+  standing still.** It happens whatever the skin setting, and the cause is not known
 - Choosing Chitose's look, or the skin tones of Chitose, Sae and Yae, does not affect the
   Chitose, Sae and Yae who appear in the story (the mod works on its own copies of their
   models)
