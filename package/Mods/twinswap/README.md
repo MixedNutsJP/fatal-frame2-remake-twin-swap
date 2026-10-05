@@ -125,6 +125,8 @@ Native120FPSOption（`dinput8.dll` + `Mods\native120fps\`）や MouseWheelCamera
 | `Sub` | 同行キャラ（本編の繭）の見た目。値は `Main` と同じ。既定値 `mio` |
 | `Rope` | 紗重・八重の赤い縄。`1` = 表示（既定）/ `0` = 非表示 |
 | `Blindfold` | 澪の 2 着目（夏のカーディガン）の目隠し。`default` = ゲームのまま（既定）/ `show` = 常に表示 / `hide` = 常に非表示 |
+| `ChitoseSkin` | 千歳の肌。`default` = ゲームのまま（幽霊の白い肌、既定）/ `human` = 生きている人の肌色 |
+| `SaeYaeSkin` | 紗重・八重の肌。`default` = ゲームのまま（生前の肌色、既定）/ `ghost` = 幽霊の白い肌 |
 | `Enabled` | `1` = 有効 / `0` = 無効 |
 | `Log` | `1` = ログを出力 / `0` = 出力しない |
 
@@ -195,13 +197,18 @@ GitHub の Issue で教えてください。
   カットシーンでも消すにはモデルのファイル自体を書き換える必要がありますが、そうすると
   イベントに登場する本来の紗重・八重の縄も一緒に消えてしまいます。入れ替えた姿だけ縄を消すのは、
   今の仕組みでは回避が難しいため、対応の予定は未定です
-- `sae` / `yae` を選び `Rope=1` のときは、イベントで登場する紗重・八重も、赤い縄が常に表示
-  される状態になります。本来は縄の一部を出さない場面でも、縄が見えることがあります
+- **肌の色を選べます（2.4.0）。** `ChitoseSkin=human` で千歳を生きている人の肌色に、
+  `SaeYaeSkin=ghost` で紗重・八重を幽霊の白い肌にできます。変わるのは顔と手足の色だけで、
+  顔立ちは元のままです。千歳は、目の周りの隈と唇の色に元の灰色が少し残ります
+- **既知の不具合：`SaeYaeSkin=ghost` にすると、紗重・八重の着物の袖が、本来より少しなびきます。**
+  原因は分かっていません。肌を変えない設定（`default`）では起きません
+- 千歳の姿や、千歳・紗重・八重の肌の色を選んでも、本編に登場する千歳・紗重・八重には影響しません
+  （Mod はモデルの写しを別に用意して使います）
+- `sae` / `yae` を選び `Rope=1`、`SaeYaeSkin=default` のときは、イベントで登場する紗重・八重も、
+  赤い縄が常に表示される状態になります。本来は縄の一部を出さない場面でも、縄が見えることがあります
 - **千歳は双子より背が低く、モデルに足がありません。** 裾の下に何も描かれないのは、ゲームが
   持っている千歳のモデルの作りで、Mod の不具合ではありません
 - 千歳の姿で手をつなぐと、つなぐ瞬間に一瞬だけ背が伸びて、すぐ戻ることがあります
-- 千歳の姿にしても、本編に登場する千歳には影響しません（Mod は千歳のモデルの写しを別に用意して
-  使います）
 - 2.1.0 では紗重と八重を取り違えていました。2.2.0 で直したので、`sae` / `yae` の見た目が
   2.1.0 とは逆になります（腰に縄を巻くだけの方が紗重、縄が長く垂れている方が八重）
 - 入れ替え用のデータ（`MixedNuts\cache\fdata_package\`、最大で約 100 MB）は、ローダーが
@@ -286,6 +293,11 @@ https://github.com/MixedNutsJP/fatal-frame2-remake-twin-swap/issues
 
 紗重・八重のモデルは、赤い縄を澪・繭に無い表示グループに置いていて、澪・繭のキャラは
 このグループを表示しません。顔と同じ方法で、縄を常時表示のグループへ移します。
+
+千歳と、肌の色を変えた紗重・八重は、本編にも登場するので、モデルの写しを作って使います。
+写しは、見た目として使っていない方の双子の初期衣装のファイルに置きます。千歳は体が小さいので、
+写しの骨格を双子の動きに合わせて調整します。肌の色を変える設定では、顔と手足のテクスチャに、
+もう一方の肌の色味を移したものを起動時に作ります（千歳には紗重の、紗重・八重には千歳の色味）。
 
 この Mod は索引ファイル（root.rdb / root.rdx）をローダーに登録します。ゲームが索引
 ファイルを最初に開くとき、ローダーはその時点の索引ファイル（Yumia fdata tools で入れた
@@ -410,6 +422,8 @@ To disable temporarily, set `Enabled` to `0` in `twinswap.ini`.
 | `Sub` | Look of the companion (Mayu in the story). Same values as `Main`. Default `mio` |
 | `Rope` | Sae's and Yae's red rope. `1` = show (default) / `0` = hide |
 | `Blindfold` | The blindfold on Mio's 2nd costume (summer cardigan). `default` = as the game does (default) / `show` = always shown / `hide` = never shown |
+| `ChitoseSkin` | Chitose's skin. `default` = as the game does (a ghost's pale skin, default) / `human` = a living skin tone |
+| `SaeYaeSkin` | Sae's and Yae's skin. `default` = as the game does (alive, default) / `ghost` = a ghost's pale skin |
 | `Enabled` | `1` = on / `0` = off |
 | `Log` | `1` = write a log file / `0` = no log |
 
@@ -487,15 +501,23 @@ Chitose was checked walking, holding hands and aiming the camera with
   the model files themselves, which would also remove the rope from the real Sae and
   Yae who appear in events. Hiding it only on the swapped characters is hard to do with
   the way this mod works, so there is no fix planned for now
-- With `sae` / `yae` selected and `Rope=1`, the Sae and Yae who appear in events also
-  always show the whole red rope, even in scenes where part of it would normally be
-  hidden
+- **The skin tone can be chosen (2.4.0).** `ChitoseSkin=human` gives Chitose a living
+  skin tone, and `SaeYaeSkin=ghost` gives Sae and Yae a ghost's pale skin. Only the colour
+  of the face, hands and feet changes; the features stay as they are. On Chitose a little
+  of the original grey remains around the eyes and on the lips
+- **Known issue: with `SaeYaeSkin=ghost`, the sleeves of Sae's and Yae's kimono sway a
+  little more than they should.** The cause is not known. It does not happen with the skin
+  left as it is (`default`)
+- Choosing Chitose's look, or the skin tones of Chitose, Sae and Yae, does not affect the
+  Chitose, Sae and Yae who appear in the story (the mod works on its own copies of their
+  models)
+- With `sae` / `yae` selected, `Rope=1` and `SaeYaeSkin=default`, the Sae and Yae who
+  appear in events also always show the whole red rope, even in scenes where part of it
+  would normally be hidden
 - **Chitose is shorter than the twins and her model has no feet.** Nothing being drawn
   below the hem is how the game's own model of her is made, not a fault of the mod
 - With Chitose's look, she may appear taller for a moment when the two take hands, then
   goes back
-- Choosing Chitose's look does not affect the Chitose who appears in the story (the mod
-  uses its own copy of her model)
 - 2.1.0 had Sae and Yae the wrong way round. This is fixed in 2.2.0, so `sae` / `yae`
   look the other way round compared with 2.1.0 (Sae only has the rope tied around her
   waist; Yae's rope hangs down)
@@ -585,6 +607,13 @@ change).
 Sae's and Yae's models keep the red rope in display groups that Mio's and Mayu's
 models do not have, so the twins never show them. The mod moves the rope into the
 always-visible group in the same way as the face.
+
+Chitose, and Sae and Yae with a changed skin tone, also appear in the story, so the mod
+works on copies of their models, kept in the default costume files of whichever twin's
+look is not in use.
+Chitose is small, so the skeleton of her copy is adjusted to the twins' animations.
+With a skin setting, the face and hand/foot textures are rebuilt at startup with the
+other's skin tone transferred onto them (Sae's for Chitose, Chitose's for Sae and Yae).
 
 The mod registers the index files (root.rdb / root.rdx) with the loader. When the
 game first opens either of them, the loader hands the mod the current index files

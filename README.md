@@ -89,6 +89,8 @@ at 1.x, update them all at once; see the loader's README for details. You may co
 | `Sub` | 同行キャラ（本編の繭）の見た目。値は `Main` と同じ、既定 `mio` / Look of the companion (Mayu in the story). Same values, default `mio` |
 | `Rope` | 紗重・八重の赤い縄。`1` = 表示（既定）/ `0` = 非表示 / Sae's and Yae's red rope. `1` = show (default) / `0` = hide |
 | `Blindfold` | 澪の 2 着目（夏のカーディガン）の目隠し。`default` = ゲームのまま（既定）/ `show` = 常に表示 / `hide` = 常に非表示 / The blindfold on Mio's 2nd costume (summer cardigan). `default` = as the game does (default) / `show` = always shown / `hide` = never shown |
+| `ChitoseSkin` | 千歳の肌。`default` = ゲームのまま（幽霊の白い肌、既定）/ `human` = 生きている人の肌色 / Chitose's skin. `default` = as the game does (a ghost's pale skin, default) / `human` = a living skin tone |
+| `SaeYaeSkin` | 紗重・八重の肌。`default` = ゲームのまま（生前の肌色、既定）/ `ghost` = 幽霊の白い肌 / Sae's and Yae's skin. `default` = as the game does (alive, default) / `ghost` = a ghost's pale skin |
 | `Enabled` | `1` = 有効 on / `0` = 無効 off |
 | `Log` | `1` = ログを出力 write a log / `0` = 出力しない no log |
 
@@ -156,6 +158,19 @@ Costumes are paired one-to-one in costume menu order (Mio's nth ↔ Mayu's nth).
   aiming the camera have been checked with `chitose` / `chitose` and `chitose` / `mayu`.
   For a moment when the two take hands she may look taller, then goes back. The Chitose who
   appears in the story is not affected.
+- **肌の色を選べます**（2.4.0）。`ChitoseSkin=human` で千歳を生きている人の肌色に、
+  `SaeYaeSkin=ghost` で紗重・八重を幽霊の白い肌にできます。変わるのは顔と手足の色だけで、
+  顔立ちは元のままです。千歳は、目の周りの隈と唇の色に元の灰色が少し残ります。
+  `chitose`（human）/ `sae`（ghost）の組み合わせで確認しています。本編に登場する千歳・紗重・八重
+  には影響しません。**既知の不具合：`SaeYaeSkin=ghost` のときは、紗重・八重の着物の袖が、本来より
+  少しなびきます**（原因は分かっていません）。
+  **The skin tone can be chosen** (2.4.0). `ChitoseSkin=human` gives Chitose a living skin
+  tone, and `SaeYaeSkin=ghost` gives Sae and Yae a ghost's pale skin. Only the colour of the
+  face, hands and feet changes; the features stay as they are. On Chitose a little of the
+  original grey remains around the eyes and on the lips. Checked with `chitose` (human) /
+  `sae` (ghost). The Chitose, Sae and Yae who appear in the story are not affected.
+  **Known issue: with `SaeYaeSkin=ghost`, the sleeves of Sae's and Yae's kimono sway a
+  little more than they should** (the cause is not known).
 
 ## 他の Mod との併用 / Using it with other mods
 
@@ -288,6 +303,12 @@ Neither changes the file size. It is applied to Mio's 7 costumes × 2 models whe
 出ます。部品のインデックス数を 0 にすれば消せますが、同じモデルを使う本来の紗重・八重の縄も
 消えるので採用していません）。
 
+`SaeYaeSkin=ghost` のときだけは、千歳と同じく、モデルの写しを使っていない方の双子の初期衣装の
+ファイルに置き、枠はそのモデル定義を指します（下の「千歳」「肌の色」を参照）。写しには、モデル
+ごとの kidsobjdb（補助の骨を動かす計算の定義。紗重・八重と双子で中身が違う）も一緒に置きます。
+それでも袖が本来より少しなびき、原因は分かっていません。そのため、肌を変えないときは写しを
+使いません。
+
 Sae and Yae each have one model definition, the white kimono they wear while alive (Sae
 `0x47095B30` / g1m `0x9649ABE6`, Yae `0xAA5CC277` / g1m `0xE92E0AFF`). Sae only has the rope
 tied around her waist; Yae's rope hangs down. 2.1.0 had them the wrong way round (the Sae
@@ -299,6 +320,13 @@ With `Rope=0` the rope stays hidden during gameplay, where the twins' characters
 groups by number, but cutscenes seem to apply the model definition's display presets by group
 name, so it shows up there. Zeroing the parts' index counts would hide it everywhere, but also
 on the real Sae and Yae, who use the same models, so that is not done.
+
+Only with `SaeYaeSkin=ghost`, a copy of the model is kept in the default costume files of
+whichever twin's look is not in use, as for Chitose, and the slots point at that model
+definition (see "Chitose" and "Skin tone" below). The copy also brings its per-model kidsobjdb
+(the definition of the calculations that drive helper bones, which differs between Sae/Yae
+and the twins). The sleeves still sway a little more than they should, for a reason not yet
+found, so the copy is not used when the skin is left as it is.
 
 ### 千歳 / Chitose
 
@@ -328,6 +356,23 @@ costume (high and low detail) of whichever twin's look is not in use. Its g1m / 
 oid / ktid are overwritten with Chitose's, and slots set to `chitose` point at that model
 definition. Every slot of the twins is rewritten by this mod, so only Chitose's slots end up
 pointing there.
+
+### 肌の色 / Skin tone
+
+千歳・紗重・八重は、顔と手足の色テクスチャの配置（UV）が同じです。そこで、色を変える側の
+テクスチャに、もう一方の「なだらかな色の分布」を場所ごとの比として掛けます（千歳には紗重の、
+紗重・八重には千歳の色味）。絵柄は元のままで、肌の色だけが移ります。テクスチャ（BC1）を展開し、
+色を移し、ミップを作り直して圧縮し直すところまで、起動時にゲームのファイルから行います。
+できたテクスチャは、置き場所の双子だけが使っているテクスチャの枠に置き、モデルの写しの
+ktid（テクスチャの一覧）をその枠へ向けます。
+
+Chitose, Sae and Yae share the layout (UVs) of their face and hand/foot colour textures. The
+texture being changed is multiplied, place by place, by the ratio of the other's smoothed
+colours to its own (Sae's tone for Chitose, Chitose's for Sae and Yae): the painted detail
+stays and only the skin tone moves across. Decoding the textures (BC1), transferring the
+tone, rebuilding the mipmaps and compressing them again is all done from the game's files at
+startup. The result is stored in texture slots used only by the twin that hosts the copy, and
+the copy's ktid (texture list) is pointed at those slots.
 
 ### 目隠し / The blindfold
 

@@ -8,6 +8,8 @@
 #   python twinswap_ref.py restore
 #       バックアップに戻す
 import sys, os, struct, zlib, shutil
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import skin_tone
 
 GAME = r'D:\SteamLibrary\steamapps\common\FatalFrameII\fdata_package'
 BACKUP = r'D:\develop\FATAL FRAME2_mods\analysis_datas\twin_swap_poc\backup_before_poc'
@@ -98,25 +100,59 @@ def find_unique(data, v):
     return data.find(b)
 
 
-# 紗重・八重は 1 着だけ（高精細・軽量の区別も無い）。どの衣装でもこの定義を指す
-SAE_DEF = 0x47095b30   # g1m 0x9649abe6。腰に縄を巻くだけの方（2.1.0 では八重と取り違えていた）
-YAE_DEF = 0xaa5cc277   # g1m 0xe92e0aff。縄が長く垂れている方
+# 紗重・八重は 1 着だけ（高精細・軽量の区別も無い）。腰に縄を巻くだけの方が紗重（g1m 0x9649abe6）、
+# 縄が長く垂れている方が八重（g1m 0xe92e0aff）。2.1.0 では取り違えていた
 # 立花千歳。顔はグループ 0 にあり、グループの修正は不要。腰の骨は 74.16、双子は 87.25。
 # 双子のモーションでは体が 13.09 持ち上がって足が浮くので、骨格を書き換えて合わせる（fit_chitose）
 CHITOSE_DROP = struct.unpack('<f', struct.pack('<f', struct.unpack('<f', struct.pack('<f', 87.25))[0]
                                                  - struct.unpack('<f', struct.pack('<f', 74.16))[0]))[0]
-# 書き換えた千歳のモデルは、見た目として使われていない方の双子の初期衣装（高精細・軽量）に置く。
-# 並びは (モデル定義, g1m, grp, mtl, oid, ktid)
-CHITOSE_FILES = [(0x8d206a12, 0x91c71644, 0x98b6a7c2, 0x92022e82, 0x83c14fbd, 0xf4a640b7),
-                 (0xbc9476dc, 0x171b23ba, 0x1e0ab538, 0x17563bf8, 0x09155d33, 0x19d3e201)]
-MAYU_FILES = [(0x49118300, 0x7dcc4616, 0x84bbd794, 0x7e075e54, 0x6fc67f8f, 0x89470b25),
-              (0x0b93ba76, 0xd9c21c60, 0xe0b1adde, 0xd9fd349e, 0xcbbc55d9, 0xac0bfe1b)]
-MIO_FILES = [(0x511668a8, 0xcade596e, 0xd1cdeaec, 0xcb1971ac, 0xbcd892e7, 0xde7762cd),
-             (0x36546a72, 0xb50f91e4, 0xbbff2362, 0xb54aaa22, 0xa709cb5d, 0x3a6d3917)]
+# 紗重・八重の、本来のモデル定義。肌の色を変えないときは、枠をこの定義へ向ける
+SAE_YAE_DEFS = {'sae': 0x47095b30, 'yae': 0xaa5cc277}
+
+# 千歳と、肌の色を変えた紗重・八重は、モデルの写しを別のファイルに置いて使う。本来の千歳・紗重・
+# 八重（別の枠から同じモデルを使う）に影響させないため。置き場所は、見た目として使われていない
+# 双子の初期衣装（高精細・軽量）。モデル定義が参照する g1m / grp / mtl / oid / ktid を上書きする。
+# files: (g1m, grp, mtl, oid, ktid) を高精細・軽量の順に。紗重・八重は 1 体だけなので同じものを並べる
+# db:    モデルごとの kidsobjdb（補助の骨を動かす計算の定義）。紗重・八重は双子と中身が違い、
+#        双子のものを使うと袖のなびきが大きくなったので、これも写す。千歳は写さない
+# objs:  それぞれの ktid の中で、顔と手足のテクスチャを指すオブジェクト
+# skin:  顔と手足のテクスチャ（g1t）
+# 紗重・八重の写しは、db を写しても袖が本来より少しなびく（原因不明）。肌を変えないときは使わない
+EXTRA = {
+    'sae': dict(files=[(0x9649abe6, 0x9d393d64, 0x9684c424, 0x8843e55f, 0x80765f55)] * 2,
+                objs=[(0xaf727d4f, 0x5c5c8c6f)] * 2, skin=(0x742128bd, 0x1c0fb7dd), db=0xea30890c),
+    'yae': dict(files=[(0xe92e0aff, 0xf01d9c7d, 0xe969233d, 0xdb284478, 0x8a1de35c)] * 2,
+                objs=[(0x82465651, 0x2f306571)] * 2, skin=(0x60b77d78, 0x08a60c98), db=0xf46e1125),
+    'chitose': dict(files=[(0x91c71644, 0x98b6a7c2, 0x92022e82, 0x83c14fbd, 0xf4a640b7),
+                           (0x171b23ba, 0x1e0ab538, 0x17563bf8, 0x09155d33, 0x19d3e201)],
+                    objs=[(0xd90f8a1f, 0x8708793f), (0xddaf9a77, 0x396ad757)],
+                    skin=(0xff963d2b, 0xe1683c4b)),
+}
+# 置き場所。defs / files は初期衣装の高精細・軽量。slots は、色を変えたテクスチャを置く枠
+# （オブジェクト, g1t）。この双子の初期衣装の ktid だけが使っているテクスチャから 2 つ選んだ
+HOMES = {
+    'mayu': dict(defs=(0x49118300, 0x0b93ba76),
+                 files=[(0x7dcc4616, 0x84bbd794, 0x7e075e54, 0x6fc67f8f, 0x89470b25),
+                        (0xd9c21c60, 0xe0b1adde, 0xd9fd349e, 0xcbbc55d9, 0xac0bfe1b)],
+                 slots=[(0x2abdfa33, 0x0d81dfd3), (0xcd7be040, 0xdf669026)], dbs=(0x88ba7f80, 0x17810486)),
+    'mio': dict(defs=(0x511668a8, 0x36546a72),
+                files=[(0xcade596e, 0xd1cdeaec, 0xcb1971ac, 0xbcd892e7, 0xde7762cd),
+                       (0xb50f91e4, 0xbbff2362, 0xb54aaa22, 0xa709cb5d, 0x3a6d3917)],
+                slots=[(0xf8760da1, 0xdab28b97), (0x3da012ee, 0x761d04e4)], dbs=(0x95ef3e94, 0xf56100ce)),
+}
 
 
-def chitose_home(main, sub):
-    return MIO_FILES if 'mayu' in (main, sub) else MAYU_FILES
+def uses_copy(look, opts):
+    """写しを使う見た目か。千歳は常に、紗重・八重は肌の色を変えるときだけ。opts = (千歳の肌, 紗重・八重の肌)"""
+    return look == 'chitose' or (look in ('sae', 'yae') and opts[1] == 'ghost')
+
+
+def home_for(look, main, sub, opts):
+    """写しの置き場所。空いている双子を繭、澪の順に、main、sub の順で割り当てる"""
+    free = [t for t in ('mayu', 'mio') if t not in (main, sub)]
+    return HOMES[free[0 if look == main or not uses_copy(main, opts) else 1]]
+
+
 def fit_chitose(g1m, helper=68, spare=75, helper_id=107, spare_id=114):
     """千歳のモデルの骨格（G1MS）を、双子のモーションで足が浮かないように書き換える。
     腰（1 番）の初期位置を上げ、体は 2 番の子（X が上向き）を下げる。腰の直下の補助の骨は、
@@ -151,21 +187,32 @@ def fit_chitose(g1m, helper=68, spare=75, helper_id=107, spare_id=114):
     return bytes(g1m)
 
 
-def def_for(look, i, k, home):
-    return {'mio': MIO_DEFS[i][k], 'mayu': MAYU_DEFS[i][k], 'sae': SAE_DEF, 'yae': YAE_DEF,
-            'chitose': home[k][0]}[look]
+def def_for(look, i, k, main, sub, opts):
+    if uses_copy(look, opts):
+        return home_for(look, main, sub, opts)['defs'][k]
+    if look in SAE_YAE_DEFS:
+        return SAE_YAE_DEFS[look]
+    return {'mio': MIO_DEFS[i][k], 'mayu': MAYU_DEFS[i][k]}[look]
 
 
-def assign_refs(db, main, sub):
+def assign_refs(db, main, sub, opts):
     """澪の枠は main の見た目、繭の枠は sub の見た目のモデル定義を指すようにする"""
     db = bytearray(db)
-    home = chitose_home(main, sub)
     pos = {v: find_unique(db, v) for pair in MIO_DEFS + MAYU_DEFS for v in pair}
     for i, (mio, mayu) in enumerate(zip(MIO_DEFS, MAYU_DEFS)):
         for k in range(2):
-            struct.pack_into('<I', db, pos[mio[k]], def_for(main, i, k, home))
-            struct.pack_into('<I', db, pos[mayu[k]], def_for(sub, i, k, home))
+            struct.pack_into('<I', db, pos[mio[k]], def_for(main, i, k, main, sub, opts))
+            struct.pack_into('<I', db, pos[mayu[k]], def_for(sub, i, k, main, sub, opts))
     return bytes(db)
+
+
+def replace_object(ktid, old, new):
+    """ktid（8 バイトの並び: 番号, オブジェクト）の中で、オブジェクト old を new に差し替える"""
+    ktid = bytearray(ktid)
+    at = [i for i in range(0, len(ktid) - 7, 8) if struct.unpack_from('<I', ktid, i + 4)[0] == old]
+    assert len(at) == 1, 'texture object %08x not found' % old
+    struct.pack_into('<I', ktid, at[0] + 4, new)
+    return bytes(ktid)
 
 
 def g1mg_section(data, typ):
@@ -255,18 +302,19 @@ BLINDFOLD_GROUP = 0x7EB9F3BA
 
 # 紗重・八重のモデル（g1m, grp）。縄（部品 @1EED9A49）がグループ 768a168d と 6ad387ac にあり、
 # 双子のキャラはこの 2 つを表示しないので、常時表示にする
-SAE_YAE_MODELS = {'sae': (0x9649abe6, 0x9d393d64), 'yae': (0xe92e0aff, 0xf01d9c7d)}
 ROPE_GROUPS = (0x768A168D, 0x6AD387AC)
 
 
 # ---- 組み立て ----------------------------------------------------------------
 
-def build(folder, rdb, rdx, main, sub, rope=True, blindfold='default'):
+def build(folder, rdb, rdx, main, sub, rope=True, blindfold='default', chitose_skin='default',
+          sae_yae_skin='default'):
     """(新しい rdb, 新しい rdx, fdata) を返す"""
     files = []
+    opts = (chitose_skin, sae_yae_skin)
     for h in DBS:
         data, meta = read_entry(folder, rdb, rdx, h)
-        files.append((h, assign_refs(data, main, sub), meta))
+        files.append((h, assign_refs(data, main, sub, opts), meta))
     for g1m_h, grp_h in MIO_MODELS:
         names = []
         if sub == 'mio':
@@ -285,22 +333,48 @@ def build(folder, rdb, rdx, main, sub, rope=True, blindfold='default'):
         files.append((g1m_h, g1m, g1m_meta))
         if names:
             files.append((grp_h, grp, grp_meta))
-    if 'chitose' in (main, sub):
-        # 骨格を双子のモーションに合わせたモデルを、使っていない双子の初期衣装に置く。
-        # 中身は千歳、エントリの付属データは置き場所のものを使う
-        for src, dst in zip(CHITOSE_FILES, chitose_home(main, sub)):
-            for n in range(1, 6):
-                data = read_entry(folder, rdb, rdx, src[n])[0]
-                if n == 1:
-                    data = fit_chitose(data)
-                files.append((dst[n], data, read_entry(folder, rdb, rdx, dst[n])[1]))
-    for look in ('sae', 'yae'):
-        if rope and look in (main, sub):
-            g1m_h, grp_h = SAE_YAE_MODELS[look]
-            g1m, g1m_meta = read_entry(folder, rdb, rdx, g1m_h)
-            grp, grp_meta = read_entry(folder, rdb, rdx, grp_h)
-            g1m, grp = merge_groups(g1m, grp, ROPE_GROUPS)
-            files += [(g1m_h, g1m, g1m_meta), (grp_h, grp, grp_meta)]
+    for look in ('sae', 'yae', 'chitose'):
+        if look not in (main, sub):
+            continue
+        if not uses_copy(look, opts):
+            # 本来のモデルをそのまま使う。縄のグループを常時表示にする
+            if rope:
+                g1m_h, grp_h = EXTRA[look]['files'][0][:2]
+                g1m, g1m_meta = read_entry(folder, rdb, rdx, g1m_h)
+                grp, grp_meta = read_entry(folder, rdb, rdx, grp_h)
+                g1m, grp = merge_groups(g1m, grp, ROPE_GROUPS)
+                files += [(g1m_h, g1m, g1m_meta), (grp_h, grp, grp_meta)]
+            continue
+        # モデルの写しを、使っていない双子の初期衣装に置く。
+        # 中身は写し元、エントリの付属データは置き場所のものを使う
+        ex, home = EXTRA[look], home_for(look, main, sub, opts)
+        skin = chitose_skin == 'human' if look == 'chitose' else sae_yae_skin == 'ghost'
+        for k in range(2):
+            data = [read_entry(folder, rdb, rdx, h)[0] for h in ex['files'][k]]
+            if look == 'chitose':
+                data[0] = fit_chitose(data[0])
+            elif rope:   # 縄のグループを常時表示にする（双子のキャラはこの 2 つを表示しない）
+                data[0], data[1] = merge_groups(data[0], data[1], ROPE_GROUPS)
+            if skin:
+                for obj, (slot_obj, _) in zip(ex['objs'][k], home['slots']):
+                    data[4] = replace_object(data[4], obj, slot_obj)
+            for h, d in zip(home['files'][k], data):
+                files.append((h, d, read_entry(folder, rdb, rdx, h)[1]))
+            if 'db' in ex:   # 識別子（+0x14）とオブジェクトの名前（+0x28）は置き場所のものにする
+                db = bytearray(read_entry(folder, rdb, rdx, ex['db'])[0])
+                home_db, meta = read_entry(folder, rdb, rdx, home['dbs'][k])
+                assert db[:4] == b'_DOK' and db[0x1c:0x20] == b'IDOK'
+                assert struct.unpack_from('<I', db, 0x28)[0] == ex['db']
+                assert struct.unpack_from('<I', home_db, 0x28)[0] == home['dbs'][k]
+                db[0x14:0x18] = home_db[0x14:0x18]
+                struct.pack_into('<I', db, 0x28, home['dbs'][k])
+                files.append((home['dbs'][k], bytes(db), meta))
+        if skin:   # 千歳は紗重の、紗重・八重は千歳の色味を移す
+            tone = EXTRA['sae' if look == 'chitose' else 'chitose']['skin']
+            for own, other, (_, slot) in zip(ex['skin'], tone, home['slots']):
+                files.append((slot, skin_tone.recolor(read_entry(folder, rdb, rdx, own)[0],
+                                                      read_entry(folder, rdb, rdx, other)[0]),
+                              read_entry(folder, rdb, rdx, slot)[1]))
 
     marker = max(rdx_files(rdx)) + 1
     assert FDATA_HASH not in rdx_files(rdx).values()

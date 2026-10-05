@@ -26,6 +26,7 @@
 // ログは英語で書く（利用者が自分で状況を判断できるように）。コメントは日本語。
 
 #include <windows.h>
+#include <climits>
 #include <cmath>
 #include <cstdio>
 #include <cstdint>
@@ -51,7 +52,7 @@ using mixednuts::Wr;
 using mixednuts::file::ReadAt;
 
 constexpr char     kVersion[]  = "2.4.0";
-constexpr char     kCacheTag[] = "twinswap-v17";   // 生成ロジックを変えたら上げる
+constexpr char     kCacheTag[] = "twinswap-v22";   // 生成ロジックを変えたら上げる
 constexpr uint32_t kFdataHash  = 0xFFFE7510;
 
 const wchar_t kRdb[] = L"fdata_package\\root.rdb";
@@ -66,6 +67,8 @@ bool g_enabled = true;
 Look g_main = kMayu;   // 操作キャラ（本編の澪）の見た目
 Look g_sub  = kMio;    // 同行キャラ（本編の繭）の見た目
 bool g_rope = true;    // 紗重・八重の赤い縄を表示するか
+bool g_chitoseHuman = false;   // 千歳の肌を人間の色にするか
+bool g_saeYaeGhost  = false;   // 紗重・八重の肌を幽霊の色にするか
 
 // 澪の夏のカーディガン（2 着目）の目隠し
 enum Blindfold { kBfDefault, kBfShow, kBfHide };
@@ -102,12 +105,9 @@ const uint32_t kMayuDefs[7][2] = {
     {0xC298B703, 0x851AEE79}, {0x40707304, 0x02F2AA7A}, {0xBE482F05, 0x80CA667B},
     {0x3C1FEB06, 0xFEA2227C}};
 
-// 紗重・八重は白い着物（生前の姿）の 1 着だけで、高精細・軽量の区別も無い。どの衣装を
-// 選んでもこの定義を指す。腰に縄を巻くだけの方が紗重、縄が長く垂れている方が八重
-// （2.1.0 では逆にしていた。ゲーム内で見比べた利用者の指摘で 2.2.0 で直した）。
-// どちらも顔は常時表示のグループ 0 にあり、顔の修正は要らない
-constexpr uint32_t kSaeDef = 0x47095B30;   // g1m 0x9649abe6
-constexpr uint32_t kYaeDef = 0xAA5CC277;   // g1m 0xe92e0aff
+// 紗重・八重は白い着物（生前の姿）の 1 着だけで、高精細・軽量の区別も無い。腰に縄を巻くだけの
+// 方が紗重、縄が長く垂れている方が八重（2.1.0 では逆にしていた。ゲーム内で見比べた利用者の
+// 指摘で 2.2.0 で直した）。どちらも顔は常時表示のグループ 0 にあり、顔の修正は要らない
 
 // 立花千歳。顔は常時表示のグループ 0 にあり、ほかのグループ（7f621c22 / abdec7fe）は目まわりの
 // 差分で、双子のキャラが表示する 7f621c22 で足りるので、グループの修正は要らない。
@@ -115,37 +115,97 @@ constexpr uint32_t kYaeDef = 0xAA5CC277;   // g1m 0xe92e0aff
 // そのままでは体が 13.09 持ち上がって足が浮く。骨格を書き換えて合わせる（FitChitose）
 constexpr float kChitoseDrop = 87.25f - 74.16f;
 
-// 千歳の骨格は双子のモーションに合わせて書き換えるので、本来の千歳（別の枠から同じモデルを
-// 使う）に影響しないよう、書き換えたモデルは別のファイルに置く。置き場所は、見た目として
-// 使われていない方の双子の初期衣装（高精細・軽量）。双子の枠はすべてこの Mod が書き換えるので、
-// そのモデル定義を指す枠は千歳の見た目のものだけになる。
-// モデル定義が参照するファイルのうち、g1m / grp / mtl / oid / ktid の 5 つを千歳のもので上書きする
-// （oid は g1m のエントリの付属データが、ktid はモデル定義が間接的に参照している）
-struct ModelFiles { uint32_t def, g1m, grp, mtl, oid, ktid; };
-const ModelFiles kChitoseFiles[2] = {
-    {0x8D206A12, 0x91C71644, 0x98B6A7C2, 0x92022E82, 0x83C14FBD, 0xF4A640B7},
-    {0xBC9476DC, 0x171B23BA, 0x1E0AB538, 0x17563BF8, 0x09155D33, 0x19D3E201}};
-const ModelFiles kMayuFiles[2] = {
-    {0x49118300, 0x7DCC4616, 0x84BBD794, 0x7E075E54, 0x6FC67F8F, 0x89470B25},
-    {0x0B93BA76, 0xD9C21C60, 0xE0B1ADDE, 0xD9FD349E, 0xCBBC55D9, 0xAC0BFE1B}};
-const ModelFiles kMioFiles[2] = {
-    {0x511668A8, 0xCADE596E, 0xD1CDEAEC, 0xCB1971AC, 0xBCD892E7, 0xDE7762CD},
-    {0x36546A72, 0xB50F91E4, 0xBBFF2362, 0xB54AAA22, 0xA709CB5D, 0x3A6D3917}};
+// 紗重・八重の、本来のモデル定義。肌の色を変えないときは、枠をこの定義へ向ける
+constexpr uint32_t kSaeDef = 0x47095B30;
+constexpr uint32_t kYaeDef = 0xAA5CC277;
 
-const ModelFiles* ChitoseHome()
+// 千歳と、肌の色を変えた紗重・八重は、モデルの写しを別のファイルに置いて使う。本来の千歳・紗重・
+// 八重（別の枠から同じモデルを使う）に影響させないため。置き場所は、見た目として使われていない
+// 双子の初期衣装（高精細・軽量）。双子の枠はすべてこの Mod が書き換えるので、そのモデル定義を
+// 指す枠は写しを使う見た目のものだけになる。
+// モデル定義が参照するファイルのうち、g1m / grp / mtl / oid / ktid を写し元のもので上書きする
+// （oid は g1m のエントリの付属データが、ktid はモデル定義が間接的に参照している）。
+// db はモデルごとの kidsobjdb（補助の骨を動かす計算の定義が 1 個入っている）。紗重・八重は
+// 双子と中身が違い、双子のものを使うと袖のなびきが大きくなったので、これも写す。千歳は双子の
+// もので確認が取れているので写さない（0）。
+// 紗重・八重の写しは、これを写しても、袖が本来より少しなびく（原因は分かっていない。置き場所の
+// モデル定義の、骨に揺れを与える設定を外しても、キャラごとの識別子を写し元のものにしても
+// 変わらなかった）。そのため、肌の色を変えない紗重・八重には写しを使わない
+struct ModelFiles { uint32_t g1m, grp, mtl, oid, ktid, db; };
+
+// 写しを使う見た目 1 人ぶん。files は高精細・軽量（紗重・八重は 1 体だけなので同じものを並べる）。
+// faceObj / handObj は、それぞれの ktid の中で顔と手足のテクスチャを指すオブジェクト。
+// faceG1t / handG1t は、そのテクスチャの実ファイル
+struct Extra {
+    ModelFiles files[2];
+    uint32_t   faceObj[2], handObj[2];
+    uint32_t   faceG1t, handG1t;
+};
+const Extra kSaeExtra = {
+    {{0x9649ABE6, 0x9D393D64, 0x9684C424, 0x8843E55F, 0x80765F55, 0xEA30890C},
+     {0x9649ABE6, 0x9D393D64, 0x9684C424, 0x8843E55F, 0x80765F55, 0xEA30890C}},
+    {0xAF727D4F, 0xAF727D4F}, {0x5C5C8C6F, 0x5C5C8C6F}, 0x742128BD, 0x1C0FB7DD};
+const Extra kYaeExtra = {
+    {{0xE92E0AFF, 0xF01D9C7D, 0xE969233D, 0xDB284478, 0x8A1DE35C, 0xF46E1125},
+     {0xE92E0AFF, 0xF01D9C7D, 0xE969233D, 0xDB284478, 0x8A1DE35C, 0xF46E1125}},
+    {0x82465651, 0x82465651}, {0x2F306571, 0x2F306571}, 0x60B77D78, 0x08A60C98};
+const Extra kChitoseExtra = {
+    {{0x91C71644, 0x98B6A7C2, 0x92022E82, 0x83C14FBD, 0xF4A640B7, 0},
+     {0x171B23BA, 0x1E0AB538, 0x17563BF8, 0x09155D33, 0x19D3E201, 0}},
+    {0xD90F8A1F, 0xDDAF9A77}, {0x8708793F, 0x396AD757}, 0xFF963D2B, 0xE1683C4B};
+
+// 置き場所。defs / files は初期衣装の高精細・軽量。slotObj / slotG1t は、色を変えた肌のテクスチャ
+// （顔、手足）を置く枠。この双子の初期衣装の ktid だけが使っているテクスチャから 2 つ選んだ
+struct Home {
+    uint32_t   defs[2];
+    ModelFiles files[2];
+    uint32_t   slotObj[2], slotG1t[2];
+};
+const Home kMayuHome = {
+    {0x49118300, 0x0B93BA76},
+    {{0x7DCC4616, 0x84BBD794, 0x7E075E54, 0x6FC67F8F, 0x89470B25, 0x88BA7F80},
+     {0xD9C21C60, 0xE0B1ADDE, 0xD9FD349E, 0xCBBC55D9, 0xAC0BFE1B, 0x17810486}},
+    {0x2ABDFA33, 0xCD7BE040}, {0x0D81DFD3, 0xDF669026}};
+const Home kMioHome = {
+    {0x511668A8, 0x36546A72},
+    {{0xCADE596E, 0xD1CDEAEC, 0xCB1971AC, 0xBCD892E7, 0xDE7762CD, 0x95EF3E94},
+     {0xB50F91E4, 0xBBFF2362, 0xB54AAA22, 0xA709CB5D, 0x3A6D3917, 0xF56100CE}},
+    {0xF8760DA1, 0x3DA012EE}, {0xDAB28B97, 0x761D04E4}};
+
+const Extra& ExtraOf(Look look)
 {
-    return (g_main == kMayu || g_sub == kMayu) ? kMioFiles : kMayuFiles;
+    return look == kSae ? kSaeExtra : look == kYae ? kYaeExtra : kChitoseExtra;
+}
+
+// 肌の色を変えるか。千歳は人間の肌色に、紗重・八重は幽霊の肌色にできる
+bool SkinChanged(Look look)
+{
+    return look == kChitose ? g_chitoseHuman : (look == kSae || look == kYae) && g_saeYaeGhost;
+}
+
+// 写しを使う見た目か。千歳は常に（骨格を書き換えるため）、紗重・八重は肌の色を変えるときだけ
+bool UsesCopy(Look look) { return look == kChitose || SkinChanged(look); }
+
+// 写しの置き場所。空いている双子を繭、澪の順に、Main、Sub の順で割り当てる。
+// 写しを使う見た目が 2 種類なら双子は 2 人とも空いていて、1 種類なら少なくとも 1 人は空いている
+const Home& HomeFor(Look look)
+{
+    const Home* free[2] = {};
+    int n = 0;
+    if (g_main != kMayu && g_sub != kMayu) free[n++] = &kMayuHome;
+    if (g_main != kMio && g_sub != kMio) free[n++] = &kMioHome;
+    return *free[(look == g_main || !UsesCopy(g_main)) ? 0 : 1];
 }
 
 uint32_t DefFor(Look look, int costume, int detail)
 {
+    if (UsesCopy(look)) return HomeFor(look).defs[detail];
     switch (look)
     {
     case kMio:  return kMioDefs[costume][detail];
     case kMayu: return kMayuDefs[costume][detail];
     case kSae:  return kSaeDef;
-    case kYae:  return kYaeDef;
-    default:    return ChitoseHome()[detail].def;
+    default:    return kYaeDef;
     }
 }
 
@@ -169,11 +229,8 @@ constexpr uint32_t kFaceGroup = 0x5526A88F;
 constexpr uint32_t kBlindfoldG1m   = 0xD7774EEF;
 constexpr uint32_t kBlindfoldGroup = 0x7EB9F3BA;
 
-// 紗重・八重のモデルの {g1m, grp}。縄（部品 @1EED9A49）がグループ 768a168d と 6ad387ac にあり、
-// 双子のキャラはこの 2 つを表示しないので、顔と同じ方法で常時表示のグループ 0 へ移す。
-// Rope=0 なら移さない（双子のキャラでは縄が表示されないまま）
-const uint32_t kSaeModel[2] = {0x9649ABE6, 0x9D393D64};
-const uint32_t kYaeModel[2] = {0xE92E0AFF, 0xF01D9C7D};
+// 紗重・八重の縄（部品 @1EED9A49）はグループ 768a168d と 6ad387ac にあり、双子のキャラは
+// この 2 つを表示しないので、顔と同じ方法で常時表示のグループ 0 へ移す。Rope=0 なら移さない
 const uint32_t kRopeGroups[] = {0x768A168D, 0x6AD387AC};
 
 // ---- rdb / rdx / fdata --------------------------------------------------
@@ -436,20 +493,6 @@ bool MergeGroups(File& g1m, File& grp, const uint32_t* names, size_t count)
     return true;
 }
 
-// 読み出して直したモデルを files に足す。直せなければ足さずに警告だけ出す
-bool AddMerged(const Source& src, const uint32_t model[2], const uint32_t* names, size_t count,
-               std::vector<File>& files, bool& merged)
-{
-    File g1m, grp;
-    merged = false;
-    if (!ReadEntry(src, model[0], g1m) || !ReadEntry(src, model[1], grp)) return false;
-    if (!MergeGroups(g1m, grp, names, count)) return true;
-    files.push_back(std::move(g1m));
-    files.push_back(std::move(grp));
-    merged = true;
-    return true;
-}
-
 // 指定した名前のグループに属する部品（サブメッシュ）のインデックス数を 0 にして、
 // どの表示設定でも描画されないようにする。grp は読むだけで、g1m のサイズは変わらない。
 // 部品がほかのグループからも使われている場合は、巻き添えを避けて何もしない
@@ -567,6 +610,258 @@ bool FitChitose(File& g1m)
     return true;
 }
 
+// ---- 肌の色 -------------------------------------------------------------
+// 肌のテクスチャ（BC1 の g1t）に、別のテクスチャの「なだらかな色の分布」を移す。顔・手足の
+// テクスチャは、千歳・紗重・八重で配置（UV）が同じなので、場所ごとの色の比を掛ければ、絵柄を
+// 保ったまま肌の色だけが移る。手順は tools\skin_tone.py と同じで、整数だけで計算する
+// （出力をバイト単位で突き合わせるため）。
+//   1. 両方の最上位ミップを RGB に展開する
+//   2. 64 ピクセル角のます目ごとに色の合計を取り、[1,2,1] のぼかしを縦横に 2 回かける
+//   3. ます目ごとに 色の元 / 対象 の比（12 ビット固定小数、上限 4 倍）を作る
+//   4. 比をピクセルへ双線形で広げて対象に掛ける
+//   5. ミップを 2x2 の平均で作り直し、すべて BC1 に圧縮して、対象の g1t の画素部分へ書き戻す
+
+constexpr int     kToneCell = 64, kTonePasses = 2;
+constexpr int64_t kToneBias = 4;              // 暗い所で比が暴れないように、分子と分母に足す量
+constexpr int64_t kToneMax  = 4 << 12;
+
+struct G1tInfo { uint32_t w, h, mips; size_t data; };
+
+// BC1 のテクスチャ 1 枚だけの g1t に限る。+0xC 表の位置、+0x10 枚数、表の先にテクスチャのヘッダー
+// （+0 上位 4 ビットがミップ数、+1 形式、+2 上位が高さ・下位が幅の log2）。画素は末尾に並ぶ
+bool ReadG1t(const std::vector<uint8_t>& d, G1tInfo& out)
+{
+    if (d.size() < 0x24 || memcmp(d.data(), "GT1G", 4) != 0 || Rd<uint32_t>(&d[0x10]) != 1) return false;
+    const size_t table = Rd<uint32_t>(&d[0xC]);
+    if (table + 4 > d.size()) return false;
+    const size_t th = table + Rd<uint32_t>(&d[table]);
+    if (th + 8 > d.size() || d[th + 1] != 0x59) return false;
+    out.mips = d[th] >> 4;
+    out.w = 1u << (d[th + 2] & 15);
+    out.h = 1u << (d[th + 2] >> 4);
+    if (out.mips == 0 || out.w % kToneCell || out.h % kToneCell ||
+        (out.w >> (out.mips - 1)) < 4 || (out.h >> (out.mips - 1)) < 4) return false;
+    size_t size = 0;
+    for (uint32_t m = 0; m < out.mips; ++m) size += static_cast<size_t>((out.w >> m) / 4) * ((out.h >> m) / 4) * 8;
+    if (size + th + 8 > d.size()) return false;
+    out.data = d.size() - size;
+    return true;
+}
+
+void Expand565(uint32_t c, int e[3])
+{
+    const int r = (c >> 11) & 31, g = (c >> 5) & 63, b = c & 31;
+    e[0] = (r << 3) | (r >> 2);
+    e[1] = (g << 2) | (g >> 4);
+    e[2] = (b << 3) | (b >> 2);
+}
+
+// BC1 のブロック列を RGB（1 ピクセル 3 バイト）に展開する
+void Bc1Decode(const uint8_t* src, uint32_t w, uint32_t h, std::vector<uint8_t>& out)
+{
+    out.resize(static_cast<size_t>(w) * h * 3);
+    for (uint32_t by = 0; by < h / 4; ++by)
+        for (uint32_t bx = 0; bx < w / 4; ++bx, src += 8)
+        {
+            const uint32_t c0 = Rd<uint16_t>(src), c1 = Rd<uint16_t>(src + 2), bits = Rd<uint32_t>(src + 4);
+            int pal[4][3];
+            Expand565(c0, pal[0]);
+            Expand565(c1, pal[1]);
+            for (int k = 0; k < 3; ++k)
+            {
+                pal[2][k] = c0 > c1 ? (2 * pal[0][k] + pal[1][k] + 1) / 3 : (pal[0][k] + pal[1][k]) / 2;
+                pal[3][k] = c0 > c1 ? (pal[0][k] + 2 * pal[1][k] + 1) / 3 : 0;
+            }
+            for (int i = 0; i < 16; ++i)
+            {
+                const int* p = pal[(bits >> (2 * i)) & 3];
+                uint8_t* q = &out[(static_cast<size_t>(by * 4 + i / 4) * w + bx * 4 + i % 4) * 3];
+                q[0] = static_cast<uint8_t>(p[0]);
+                q[1] = static_cast<uint8_t>(p[1]);
+                q[2] = static_cast<uint8_t>(p[2]);
+            }
+        }
+}
+
+// RGB を BC1 に圧縮して out の末尾へ足す。端点は、ブロック内の色の範囲を少し内側へ寄せたもの
+void Bc1Encode(const std::vector<uint8_t>& img, uint32_t w, uint32_t h, std::vector<uint8_t>& out)
+{
+    for (uint32_t by = 0; by < h / 4; ++by)
+        for (uint32_t bx = 0; bx < w / 4; ++bx)
+        {
+            int px[16][3], mn[3] = {255, 255, 255}, mx[3] = {0, 0, 0};
+            for (int i = 0; i < 16; ++i)
+            {
+                const uint8_t* q = &img[(static_cast<size_t>(by * 4 + i / 4) * w + bx * 4 + i % 4) * 3];
+                for (int k = 0; k < 3; ++k)
+                {
+                    px[i][k] = q[k];
+                    if (q[k] < mn[k]) mn[k] = q[k];
+                    if (q[k] > mx[k]) mx[k] = q[k];
+                }
+            }
+            for (int k = 0; k < 3; ++k)
+            {
+                const int inset = (mx[k] - mn[k]) >> 4;
+                mn[k] += inset;
+                mx[k] -= inset;
+            }
+            auto pack = [](const int v[3]) {
+                return static_cast<uint32_t>((((v[0] * 31 + 127) / 255) << 11) |
+                                             (((v[1] * 63 + 127) / 255) << 5) | ((v[2] * 31 + 127) / 255));
+            };
+            const uint32_t c0 = pack(mx), c1 = pack(mn);
+            uint32_t bits = 0;
+            if (c0 != c1)
+            {
+                int pal[4][3];
+                Expand565(c0, pal[0]);
+                Expand565(c1, pal[1]);
+                for (int k = 0; k < 3; ++k)
+                {
+                    pal[2][k] = (2 * pal[0][k] + pal[1][k] + 1) / 3;
+                    pal[3][k] = (pal[0][k] + 2 * pal[1][k] + 1) / 3;
+                }
+                for (int i = 0; i < 16; ++i)
+                {
+                    int best = 0, bestD = INT_MAX;
+                    for (int p = 0; p < 4; ++p)
+                    {
+                        int dist = 0;
+                        for (int k = 0; k < 3; ++k) dist += (px[i][k] - pal[p][k]) * (px[i][k] - pal[p][k]);
+                        if (dist < bestD) { bestD = dist; best = p; }
+                    }
+                    bits |= static_cast<uint32_t>(best) << (2 * i);
+                }
+            }
+            const size_t at = out.size();
+            out.resize(at + 8);
+            Wr<uint16_t>(&out[at], static_cast<uint16_t>(c0));
+            Wr<uint16_t>(&out[at + 2], static_cast<uint16_t>(c1));
+            Wr<uint32_t>(&out[at + 4], bits);
+        }
+}
+
+// ます目ごとの色の合計に、[1,2,1] のぼかしを縦横にかけたもの（割らずに持つ）
+void ToneGrid(const std::vector<uint8_t>& img, uint32_t w, uint32_t h, std::vector<int64_t>& grid)
+{
+    const uint32_t gw = w / kToneCell, gh = h / kToneCell;
+    grid.assign(static_cast<size_t>(gw) * gh * 3, 0);
+    for (uint32_t y = 0; y < h; ++y)
+        for (uint32_t x = 0; x < w; ++x)
+            for (int k = 0; k < 3; ++k)
+                grid[(static_cast<size_t>(y / kToneCell) * gw + x / kToneCell) * 3 + k] +=
+                    img[(static_cast<size_t>(y) * w + x) * 3 + k];
+    std::vector<int64_t> tmp(grid.size());
+    for (int pass = 0; pass < kTonePasses; ++pass)
+    {
+        for (uint32_t y = 0; y < gh; ++y)       // 横
+            for (uint32_t x = 0; x < gw; ++x)
+                for (int k = 0; k < 3; ++k)
+                {
+                    const uint32_t l = x ? x - 1 : 0, r = x + 1 < gw ? x + 1 : gw - 1;
+                    tmp[(static_cast<size_t>(y) * gw + x) * 3 + k] =
+                        grid[(static_cast<size_t>(y) * gw + l) * 3 + k] +
+                        2 * grid[(static_cast<size_t>(y) * gw + x) * 3 + k] +
+                        grid[(static_cast<size_t>(y) * gw + r) * 3 + k];
+                }
+        for (uint32_t y = 0; y < gh; ++y)       // 縦
+            for (uint32_t x = 0; x < gw; ++x)
+                for (int k = 0; k < 3; ++k)
+                {
+                    const uint32_t u = y ? y - 1 : 0, b = y + 1 < gh ? y + 1 : gh - 1;
+                    grid[(static_cast<size_t>(y) * gw + x) * 3 + k] =
+                        tmp[(static_cast<size_t>(u) * gw + x) * 3 + k] +
+                        2 * tmp[(static_cast<size_t>(y) * gw + x) * 3 + k] +
+                        tmp[(static_cast<size_t>(b) * gw + x) * 3 + k];
+                }
+    }
+}
+
+// target（g1t）に source（g1t）の色味を移す。大きさとミップ数が同じであること
+bool Recolor(std::vector<uint8_t>& target, const std::vector<uint8_t>& source)
+{
+    G1tInfo t, s;
+    if (!ReadG1t(target, t) || !ReadG1t(source, s) || t.w != s.w || t.h != s.h || t.mips != s.mips)
+        return false;
+    const uint32_t w = t.w, h = t.h, gw = w / kToneCell, gh = h / kToneCell;
+    std::vector<uint8_t> img, other;
+    Bc1Decode(&target[t.data], w, h, img);
+    Bc1Decode(&source[s.data], w, h, other);
+    std::vector<int64_t> lowT, lowS;
+    ToneGrid(img, w, h, lowT);
+    ToneGrid(other, w, h, lowS);
+    int64_t bias = kToneBias * kToneCell * kToneCell;
+    for (int pass = 0; pass < kTonePasses; ++pass) bias *= 16;
+    std::vector<int64_t> ratio(lowT.size());
+    for (size_t i = 0; i < ratio.size(); ++i)
+    {
+        const int64_t r = ((lowS[i] + bias) << 12) / (lowT[i] + bias);
+        ratio[i] = r < kToneMax ? r : kToneMax;
+    }
+    // ピクセル x に対する、左のます目・右のます目・右の重み（0〜127）
+    auto axis = [](uint32_t n, uint32_t g, std::vector<uint32_t>& g0, std::vector<uint32_t>& g1,
+                   std::vector<int64_t>& wt) {
+        g0.resize(n); g1.resize(n); wt.resize(n);
+        for (uint32_t i = 0; i < n; ++i)
+        {
+            const int v = 2 * static_cast<int>(i) + 1 - kToneCell;
+            g0[i] = v < 0 ? 0 : static_cast<uint32_t>(v / (2 * kToneCell));
+            wt[i] = v < 0 ? 0 : v % (2 * kToneCell);
+            g1[i] = g0[i] + 1 < g ? g0[i] + 1 : g - 1;
+        }
+    };
+    std::vector<uint32_t> x0, x1, y0, y1;
+    std::vector<int64_t> wx, wy;
+    axis(w, gw, x0, x1, wx);
+    axis(h, gh, y0, y1, wy);
+    const int64_t full = 2 * kToneCell;
+    for (uint32_t y = 0; y < h; ++y)
+        for (uint32_t x = 0; x < w; ++x)
+            for (int k = 0; k < 3; ++k)
+            {
+                auto at = [&](uint32_t gy, uint32_t gx) { return ratio[(static_cast<size_t>(gy) * gw + gx) * 3 + k]; };
+                const int64_t r = (at(y0[y], x0[x]) * (full - wx[x]) * (full - wy[y]) +
+                                   at(y0[y], x1[x]) * wx[x] * (full - wy[y]) +
+                                   at(y1[y], x0[x]) * (full - wx[x]) * wy[y] +
+                                   at(y1[y], x1[x]) * wx[x] * wy[y]) >> 14;
+                uint8_t& p = img[(static_cast<size_t>(y) * w + x) * 3 + k];
+                const int64_t v = (p * r + 2048) >> 12;
+                p = static_cast<uint8_t>(v < 255 ? v : 255);
+            }
+    std::vector<uint8_t> out(target.begin(), target.begin() + t.data);
+    uint32_t mw = w, mh = h;
+    for (uint32_t m = 0; m < t.mips; ++m)
+    {
+        Bc1Encode(img, mw, mh, out);
+        std::vector<uint8_t> half(static_cast<size_t>(mw / 2) * (mh / 2) * 3);
+        for (uint32_t y = 0; y < mh / 2; ++y)
+            for (uint32_t x = 0; x < mw / 2; ++x)
+                for (int k = 0; k < 3; ++k)
+                {
+                    const size_t a = (static_cast<size_t>(2 * y) * mw + 2 * x) * 3 + k;
+                    half[(static_cast<size_t>(y) * (mw / 2) + x) * 3 + k] = static_cast<uint8_t>(
+                        (img[a] + img[a + 3] + img[a + static_cast<size_t>(mw) * 3] +
+                         img[a + static_cast<size_t>(mw) * 3 + 3] + 2) >> 2);
+                }
+        img.swap(half);
+        mw /= 2;
+        mh /= 2;
+    }
+    if (out.size() != target.size()) return false;
+    target.swap(out);
+    return true;
+}
+
+// ktid（8 バイトの並び: 番号, オブジェクト）の中で、オブジェクト from を to に差し替える
+bool ReplaceObject(std::vector<uint8_t>& ktid, uint32_t from, uint32_t to)
+{
+    int found = 0;
+    for (size_t i = 0; i + 8 <= ktid.size(); i += 8)
+        if (Rd<uint32_t>(&ktid[i + 4]) == from) { Wr<uint32_t>(&ktid[i + 4], to); ++found; }
+    return found == 1;
+}
+
 // ---- 生成 ---------------------------------------------------------------
 
 // 現在の内容を丸ごと読む（先に読み込まれた Mod の改変を含む）
@@ -633,39 +928,105 @@ bool Generate()
         if (merged) files.push_back(std::move(grp));
         ++fixed;
     }
-    // 千歳: 骨格を双子のモーションに合わせたモデルを、使っていない双子の初期衣装に置く
-    for (int k = 0; k < 2 && (g_main == kChitose || g_sub == kChitose); ++k)
+    // 紗重・八重・千歳
+    for (Look look : {kSae, kYae, kChitose})
     {
-        const ModelFiles& from = kChitoseFiles[k];
-        const ModelFiles& to = ChitoseHome()[k];
-        const uint32_t pairs[5][2] = {
-            {from.g1m, to.g1m}, {from.grp, to.grp}, {from.mtl, to.mtl}, {from.oid, to.oid},
-            {from.ktid, to.ktid}};
-        for (const auto& pair : pairs)
+        if (g_main != look && g_sub != look) continue;
+        if (!UsesCopy(look))
         {
-            // 中身は千歳、エントリの付属データは置き場所のものを使う
-            File chitose, home;
-            if (!ReadEntry(src, pair[0], chitose) || !ReadEntry(src, pair[1], home)) return false;
-            if (pair[0] == from.g1m && !FitChitose(chitose))
+            // 本来のモデルをそのまま使う。縄のグループを常時表示にする（双子のキャラはこの 2 つを
+            // 表示しない）。本来の紗重・八重の縄も常に表示されるようになる
+            if (!g_rope) continue;
+            const ModelFiles& own = ExtraOf(look).files[0];
+            File g1m, grp;
+            if (!ReadEntry(src, own.g1m, g1m) || !ReadEntry(src, own.grp, grp)) return false;
+            if (MergeGroups(g1m, grp, kRopeGroups, sizeof(kRopeGroups) / sizeof(kRopeGroups[0])))
             {
-                Log("[NG] g1m 0x%08X: could not fit Chitose's skeleton", pair[0]);
+                files.push_back(std::move(g1m));
+                files.push_back(std::move(grp));
+                ++fixed;
+            }
+            else Log("[NG] Could not show the rope of %s; she will appear without it", kLookNamesA[look]);
+            continue;
+        }
+        // モデルの写しを、使っていない双子の初期衣装に置く。
+        // 中身は写し元、エントリの付属データは置き場所のものを使う
+        const Extra& ex = ExtraOf(look);
+        const Home& home = HomeFor(look);
+        const bool skin = SkinChanged(look);
+        for (int k = 0; k < 2; ++k)
+        {
+            const ModelFiles& from = ex.files[k];
+            const ModelFiles& to = home.files[k];
+            const uint32_t pairs[5][2] = {
+                {from.g1m, to.g1m}, {from.grp, to.grp}, {from.mtl, to.mtl}, {from.oid, to.oid},
+                {from.ktid, to.ktid}};
+            File copy[5], dest[5];
+            for (int n = 0; n < 5; ++n)
+                if (!ReadEntry(src, pairs[n][0], copy[n]) || !ReadEntry(src, pairs[n][1], dest[n]))
+                    return false;
+            if (look == kChitose)
+            {
+                if (!FitChitose(copy[0]))
+                {
+                    Log("[NG] g1m 0x%08X: could not fit Chitose's skeleton", from.g1m);
+                    return false;
+                }
+            }
+            // 縄のグループを常時表示にする（双子のキャラはこの 2 つを表示しない）
+            else if (g_rope && !MergeGroups(copy[0], copy[1], kRopeGroups,
+                                            sizeof(kRopeGroups) / sizeof(kRopeGroups[0])))
+                Log("[NG] Could not show the rope of %s; she will appear without it", kLookNamesA[look]);
+            if (skin && (!ReplaceObject(copy[4].data, ex.faceObj[k], home.slotObj[0]) ||
+                         !ReplaceObject(copy[4].data, ex.handObj[k], home.slotObj[1])))
+            {
+                Log("[NG] ktid 0x%08X: the skin textures are not found", from.ktid);
                 return false;
             }
-            home.data = std::move(chitose.data);
-            files.push_back(std::move(home));
+            for (int n = 0; n < 5; ++n)
+            {
+                dest[n].data = std::move(copy[n].data);
+                files.push_back(std::move(dest[n]));
+            }
+            if (from.db)
+            {
+                // kidsobjdb: "_DOK0000" …、+0x14 に DB の識別子、+0x1C から "IDOK0000" のオブジェクトが
+                // 1 個で、+0x28 がその名前（= ファイルのハッシュ）。識別子と名前は置き場所のものにする
+                File db, homeDb;
+                if (!ReadEntry(src, from.db, db) || !ReadEntry(src, to.db, homeDb)) return false;
+                if (db.data.size() < 0x2C || homeDb.data.size() < 0x2C ||
+                    memcmp(&db.data[0], "_DOK", 4) != 0 || memcmp(&db.data[0x1C], "IDOK", 4) != 0 ||
+                    Rd<uint32_t>(&db.data[0x28]) != from.db || Rd<uint32_t>(&homeDb.data[0x28]) != to.db)
+                {
+                    Log("[NG] kidsobjdb 0x%08X has an unknown layout", from.db);
+                    return false;
+                }
+                Wr<uint32_t>(&db.data[0x14], Rd<uint32_t>(&homeDb.data[0x14]));
+                Wr<uint32_t>(&db.data[0x28], to.db);
+                homeDb.data = std::move(db.data);
+                files.push_back(std::move(homeDb));
+            }
+        }
+        if (skin)   // 千歳は紗重の、紗重・八重は千歳の色味を移す
+        {
+            const Extra& tone = look == kChitose ? kSaeExtra : kChitoseExtra;
+            const uint32_t pairs[2][2] = {{ex.faceG1t, tone.faceG1t}, {ex.handG1t, tone.handG1t}};
+            for (int n = 0; n < 2; ++n)
+            {
+                File own, other, slot;
+                if (!ReadEntry(src, pairs[n][0], own) || !ReadEntry(src, pairs[n][1], other) ||
+                    !ReadEntry(src, home.slotG1t[n], slot))
+                    return false;
+                if (!Recolor(own.data, other.data))
+                {
+                    Log("[NG] g1t 0x%08X: could not change the skin colour", pairs[n][0]);
+                    return false;
+                }
+                slot.data = std::move(own.data);
+                files.push_back(std::move(slot));
+            }
         }
         ++fixed;
-    }
-    // 紗重・八重は縄のグループを常時表示にする（双子のキャラはこの 2 つを表示しない）
-    for (Look look : {kSae, kYae})
-    {
-        if (!g_rope || (g_main != look && g_sub != look)) continue;
-        bool merged = false;
-        if (!AddMerged(src, look == kSae ? kSaeModel : kYaeModel, kRopeGroups,
-                       sizeof(kRopeGroups) / sizeof(kRopeGroups[0]), files, merged))
-            return false;
-        if (merged) ++fixed;
-        else Log("[NG] Could not show the rope of %s; she will appear without it", kLookNamesA[look]);
     }
 
     // fdata: "PDRK0000", u32 0x10, u32 全体サイズ、その後に 16 バイト境界でエントリ
@@ -784,6 +1145,14 @@ void LoadConfig()
     g_sub  = ReadLook(file, L"Sub", kMio, kMayu);
     g_rope = ini::Bool(file, L"Swap", L"Rope", true);
 
+    const std::wstring cs = ini::String(file, L"Swap", L"ChitoseSkin", L"default");
+    if (_wcsicmp(cs.c_str(), L"human") == 0) g_chitoseHuman = true;
+    else if (_wcsicmp(cs.c_str(), L"default") != 0)
+        Log("[NG] [Swap] ChitoseSkin=%s is not default or human; using default", Utf8(cs).c_str());
+    const std::wstring ss = ini::String(file, L"Swap", L"SaeYaeSkin", L"default");
+    if (_wcsicmp(ss.c_str(), L"ghost") == 0) g_saeYaeGhost = true;
+    else if (_wcsicmp(ss.c_str(), L"default") != 0)
+        Log("[NG] [Swap] SaeYaeSkin=%s is not default or ghost; using default", Utf8(ss).c_str());
 
     const std::wstring bf = ini::String(file, L"Swap", L"Blindfold", L"default");
     if (_wcsicmp(bf.c_str(), L"show") == 0) g_blindfold = kBfShow;
@@ -815,8 +1184,9 @@ MIXEDNUTS_PLUGIN_EXPORT int WINAPI MixedNutsPluginInit(const MixedNutsApi* api)
 
     // tag には結果に影響する設定も入れる。変わればローダーが作り直す
     static char tag[128];
-    sprintf_s(tag, "%s main=%s sub=%s rope=%d blindfold=%s", kCacheTag, kLookNamesA[g_main],
-              kLookNamesA[g_sub], g_rope ? 1 : 0, kBlindfoldNames[g_blindfold]);
+    sprintf_s(tag, "%s main=%s sub=%s rope=%d blindfold=%s human=%d ghost=%d", kCacheTag,
+              kLookNamesA[g_main], kLookNamesA[g_sub], g_rope ? 1 : 0, kBlindfoldNames[g_blindfold],
+              g_chitoseHuman ? 1 : 0, g_saeYaeGhost ? 1 : 0);
     static const wchar_t* const targets[] = { kRdb, kRdx, nullptr };
     const MixedNutsPatch patch{ targets, tag, &GenerateSwap, nullptr };
     if (!api->RegisterPatch(api, &patch))
