@@ -20,6 +20,7 @@ GitHub: https://github.com/MixedNutsJP/fatal-frame2-remake-mod-loader
 操作キャラ（澪）と同行キャラ（繭）の**見た目を入れ替えます**。
 繭を操作して澪を連れて歩く、二人とも繭、二人とも澪、の 3 通りを設定ファイルで選べます。
 2.1.0 からは、**黒澤紗重・黒澤八重**の姿も選べます（例：紗重を操作して八重を連れて歩く）。
+2.4.0 からは、**立花千歳**の姿も選べます。
 
 入れ替わるのはモデル（顔・髪・体・衣装）だけです。動き・声・字幕・ストーリーは
 元のままです（例えば、繭の足を引きずる歩き方は、澪の姿になっても同行キャラに残ります）。
@@ -120,7 +121,7 @@ Native120FPSOption（`dinput8.dll` + `Mods\native120fps\`）や MouseWheelCamera
 
 | 項目 | 意味 |
 |---|---|
-| `Main` | 操作キャラ（本編の澪）の見た目。`mio`（澪）/ `mayu`（繭）/ `sae`（紗重）/ `yae`（八重）。既定値 `mayu` |
+| `Main` | 操作キャラ（本編の澪）の見た目。`mio`（澪）/ `mayu`（繭）/ `sae`（紗重）/ `yae`（八重）/ `chitose`（千歳）。既定値 `mayu` |
 | `Sub` | 同行キャラ（本編の繭）の見た目。値は `Main` と同じ。既定値 `mio` |
 | `Rope` | 紗重・八重の赤い縄。`1` = 表示（既定）/ `0` = 非表示 |
 | `Blindfold` | 澪の 2 着目（夏のカーディガン）の目隠し。`default` = ゲームのまま（既定）/ `show` = 常に表示 / `hide` = 常に非表示 |
@@ -135,9 +136,10 @@ Native120FPSOption（`dinput8.dll` + `Mods\native120fps\`）や MouseWheelCamera
 | `mio` | `mayu` | 元のまま |
 | `sae` | `yae` | 紗重を操作して八重を連れて歩く |
 | `yae` | `sae` | 八重を操作して紗重を連れて歩く |
+| `chitose` | `mayu` | 千歳を操作して繭を連れて歩く |
 
-`sae` / `yae` は、`mio` / `mayu` と自由に組み合わせられます（例：`Main=mio` / `Sub=sae`）。
-`mio` / `mayu` / `sae` / `yae` 以外の値を書いた場合は、そのキャラ本来の見た目のままになります。
+`sae` / `yae` / `chitose` は、`mio` / `mayu` と自由に組み合わせられます（例：`Main=mio` / `Sub=sae`）。
+`mio` / `mayu` / `sae` / `yae` / `chitose` 以外の値を書いた場合は、そのキャラ本来の見た目のままになります。
 
 ## 衣装の対応
 
@@ -157,6 +159,8 @@ Native120FPSOption（`dinput8.dll` + `Mods\native120fps\`）や MouseWheelCamera
 - アクセサリーは入れ替えの対象外です。入れ替えた姿にも、そのまま反映されます
 - **紗重・八重は白い着物の 1 着だけです。** `sae` / `yae` を指定したキャラは、衣装メニューで
   どの衣装を選んでもその姿になります（澪の 8 着目を除く）
+- **千歳も着物の 1 着だけです。** `chitose` を指定したキャラは、衣装メニューでどの衣装を
+  選んでもその姿になります（澪の 8 着目を除く）
 
 ### ゲーム内での動作確認の範囲
 
@@ -171,12 +175,15 @@ GitHub の Issue で教えてください。
 紗重・八重は、`Main=sae` / `Sub=yae` と `Main=yae` / `Sub=yae` で、歩いたときの表示
 （赤い縄を含む）を確認しています。
 
+千歳は、`Main=chitose` / `Sub=chitose` と `Main=chitose` / `Sub=mayu` で、歩く・手をつなぐ・
+射影機を構える、を確認しています。
+
 ## 注意事項
 
 - **衣装画面のプレビューも、入れ替えた後の姿で表示されます。** 衣装の名前と
   プレビューの姿が一致しないのは、この Mod の仕様です
 - **ムービーにも入れ替えを反映するには、ゲームのオプションの「表示設定」→「ムービー中の衣装」を
-  「現在の衣装」にしてください。** この設定では、ムービーがその場で描画されるので、入れ替えた
+  「現在の衣装」にしてください。**（英語表示では "Outfits During Movies" を "Current Outfit"）この設定では、ムービーがその場で描画されるので、入れ替えた
   姿で流れます（ED ムービーで確認）。「通常衣装」「DDX衣装」を選ぶと、その衣装で録画された
   動画が再生されるため、元の姿のまま流れます。「現在の衣装」でも、録画済みの動画しか無い
   ムービーがあれば、それは元の姿のままです
@@ -190,6 +197,11 @@ GitHub の Issue で教えてください。
   今の仕組みでは回避が難しいため、対応の予定は未定です
 - `sae` / `yae` を選び `Rope=1` のときは、イベントで登場する紗重・八重も、赤い縄が常に表示
   される状態になります。本来は縄の一部を出さない場面でも、縄が見えることがあります
+- **千歳は双子より背が低く、モデルに足がありません。** 裾の下に何も描かれないのは、ゲームが
+  持っている千歳のモデルの作りで、Mod の不具合ではありません
+- 千歳の姿で手をつなぐと、つなぐ瞬間に一瞬だけ背が伸びて、すぐ戻ることがあります
+- 千歳の姿にしても、本編に登場する千歳には影響しません（Mod は千歳のモデルの写しを別に用意して
+  使います）
 - 2.1.0 では紗重と八重を取り違えていました。2.2.0 で直したので、`sae` / `yae` の見た目が
   2.1.0 とは逆になります（腰に縄を巻くだけの方が紗重、縄が長く垂れている方が八重）
 - 入れ替え用のデータ（`MixedNuts\cache\fdata_package\`、最大で約 100 MB）は、ローダーが
@@ -233,7 +245,7 @@ GitHub の Issue で教えてください。
 `twinswap.log`：
 
 ```
-TwinSwap 2.3.0  Main=mayu Sub=mio Rope=1 Blindfold=default
+TwinSwap 2.4.0  Main=mayu Sub=mio Rope=1 Blindfold=default
 [OK] Registered with the loader
 [OK] Generated the swap data (...)
 ```
@@ -292,7 +304,7 @@ Mod や、先に適用されたローダーの Mod の変更を含む）をこ�
 **Swaps the looks of the player character (Mio) and the companion (Mayu).**
 In the config file you can choose between playing as Mayu with Mio at your side,
 two Mayus, or two Mios. From 2.1.0, **Sae and Yae Kurosawa** can be chosen too
-(for example, play as Sae with Yae at your side).
+(for example, play as Sae with Yae at your side). From 2.4.0, so can **Chitose Tachibana**.
 
 Only the models (face, hair, body and costume) change. Animations, voices, subtitles
 and the story stay as they are. For example, Mayu's limp remains on the companion
@@ -394,7 +406,7 @@ To disable temporarily, set `Enabled` to `0` in `twinswap.ini`.
 
 | Key | Meaning |
 |---|---|
-| `Main` | Look of the player character (Mio in the story). `mio` / `mayu` / `sae` / `yae`. Default `mayu` |
+| `Main` | Look of the player character (Mio in the story). `mio` / `mayu` / `sae` / `yae` / `chitose`. Default `mayu` |
 | `Sub` | Look of the companion (Mayu in the story). Same values as `Main`. Default `mio` |
 | `Rope` | Sae's and Yae's red rope. `1` = show (default) / `0` = hide |
 | `Blindfold` | The blindfold on Mio's 2nd costume (summer cardigan). `default` = as the game does (default) / `show` = always shown / `hide` = never shown |
@@ -409,9 +421,10 @@ To disable temporarily, set `Enabled` to `0` in `twinswap.ini`.
 | `mio` | `mayu` | vanilla |
 | `sae` | `yae` | play as Sae with Yae at your side |
 | `yae` | `sae` | play as Yae with Sae at your side |
+| `chitose` | `mayu` | play as Chitose with Mayu at your side |
 
-`sae` / `yae` can be combined freely with `mio` / `mayu` (for example `Main=mio` / `Sub=sae`).
-Any value other than `mio` / `mayu` / `sae` / `yae` leaves that character's original look.
+`sae` / `yae` / `chitose` can be combined freely with `mio` / `mayu` (for example `Main=mio` / `Sub=sae`).
+Any value other than `mio` / `mayu` / `sae` / `yae` / `chitose` leaves that character's original look.
 
 ## Costume pairing
 
@@ -433,6 +446,8 @@ her 2nd costume, the player character appears as Mayu in Mayu's 2nd costume.
 - Accessories are not part of the swap. They show up on the swapped look as usual
 - **Sae and Yae have a single outfit (the white kimono).** A character set to `sae` /
   `yae` looks like her whichever costume is selected (except Mio's 8th)
+- **Chitose also has a single outfit (her kimono).** A character set to `chitose` looks
+  like her whichever costume is selected (except Mio's 8th)
 
 ### What has been checked in game
 
@@ -448,12 +463,15 @@ GitHub Issue.
 Sae and Yae were checked walking around (including the red rope) with
 `Main=sae` / `Sub=yae` and `Main=yae` / `Sub=yae`.
 
+Chitose was checked walking, holding hands and aiming the camera with
+`Main=chitose` / `Sub=chitose` and `Main=chitose` / `Sub=mayu`.
+
 ## Notes
 
 - **The preview in the costume menu also shows the swapped look.** The costume name
   and the preview not matching is expected with this mod
-- **For movies to show the swap as well, set the game's option for the outfit shown in
-  movies to "Current Outfit"** (in Options, under the display settings; in Japanese,
+- **For movies to show the swap as well, set "Outfits During Movies" to "Current
+  Outfit"** (in Options, under the display settings; in Japanese,
   "ムービー中の衣装" = "現在の衣装"). With that setting movies are rendered in the game,
   so they play with the swapped looks (checked with an ending movie). The other two
   choices, "Default Outfit" and "DDX Outfit", play videos pre-recorded in those outfits,
@@ -472,6 +490,12 @@ Sae and Yae were checked walking around (including the red rope) with
 - With `sae` / `yae` selected and `Rope=1`, the Sae and Yae who appear in events also
   always show the whole red rope, even in scenes where part of it would normally be
   hidden
+- **Chitose is shorter than the twins and her model has no feet.** Nothing being drawn
+  below the hem is how the game's own model of her is made, not a fault of the mod
+- With Chitose's look, she may appear taller for a moment when the two take hands, then
+  goes back
+- Choosing Chitose's look does not affect the Chitose who appears in the story (the mod
+  uses its own copy of her model)
 - 2.1.0 had Sae and Yae the wrong way round. This is fixed in 2.2.0, so `sae` / `yae`
   look the other way round compared with 2.1.0 (Sae only has the rope tied around her
   waist; Yae's rope hangs down)
@@ -517,7 +541,7 @@ If the logs contain lines like these, the mod is working:
 `twinswap.log`:
 
 ```
-TwinSwap 2.3.0  Main=mayu Sub=mio Rope=1 Blindfold=default
+TwinSwap 2.4.0  Main=mayu Sub=mio Rope=1 Blindfold=default
 [OK] Registered with the loader
 [OK] Generated the swap data (...)
 ```

@@ -4,13 +4,13 @@
 A mod for FATAL FRAME / PROJECT ZERO II: Crimson Butterfly REMAKE (Steam, AppID 3920610).
 
 操作キャラ（澪）と同行キャラ（繭）の**見た目を入れ替えます**。繭を操作して澪を連れて歩く、
-二人とも繭、二人とも澪、の 3 通りを設定ファイルで選べます。2.1.0 からは**黒澤紗重・黒澤八重**の
-姿も選べます。
+二人とも繭、二人とも澪、の 3 通りを設定ファイルで選べます。2.1.0 からは**黒澤紗重・黒澤八重**、
+2.4.0 からは**立花千歳**の姿も選べます。
 入れ替わるのはモデル（顔・髪・体・衣装）だけで、動き・声・字幕・ストーリーは元のままです。
 
 **Swaps the looks of the player character (Mio) and the companion (Mayu).** Play as Mayu
 with Mio at your side, or make both twins Mayu or both Mio, chosen in a config file.
-From 2.1.0, **Sae and Yae Kurosawa** can be chosen too.
+From 2.1.0, **Sae and Yae Kurosawa** can be chosen too, and from 2.4.0 **Chitose Tachibana**.
 Only the models (face, hair, body and costume) change; animations, voices, subtitles
 and the story stay as they are.
 
@@ -85,7 +85,7 @@ at 1.x, update them all at once; see the loader's README for details. You may co
 
 | 項目 / Key | 意味 / Meaning |
 |---|---|
-| `Main` | 操作キャラ（本編の澪）の見た目。`mio` / `mayu` / `sae` / `yae`、既定 `mayu` / Look of the player character (Mio in the story). Default `mayu` |
+| `Main` | 操作キャラ（本編の澪）の見た目。`mio` / `mayu` / `sae` / `yae` / `chitose`、既定 `mayu` / Look of the player character (Mio in the story). Default `mayu` |
 | `Sub` | 同行キャラ（本編の繭）の見た目。値は `Main` と同じ、既定 `mio` / Look of the companion (Mayu in the story). Same values, default `mio` |
 | `Rope` | 紗重・八重の赤い縄。`1` = 表示（既定）/ `0` = 非表示 / Sae's and Yae's red rope. `1` = show (default) / `0` = hide |
 | `Blindfold` | 澪の 2 着目（夏のカーディガン）の目隠し。`default` = ゲームのまま（既定）/ `show` = 常に表示 / `hide` = 常に非表示 / The blindfold on Mio's 2nd costume (summer cardigan). `default` = as the game does (default) / `show` = always shown / `hide` = never shown |
@@ -99,9 +99,10 @@ at 1.x, update them all at once; see the loader's README for details. You may co
 | `mio` | `mio` | 二人とも澪 / two Mios |
 | `mio` | `mayu` | 元のまま / vanilla |
 | `sae` | `yae` | 紗重を操作して八重を連れて歩く / play as Sae with Yae at your side |
+| `chitose` | `mayu` | 千歳を操作して繭を連れて歩く / play as Chitose with Mayu at your side |
 
-`sae` / `yae` は `mio` / `mayu` と自由に組み合わせられます。
-`sae` / `yae` can be combined freely with `mio` / `mayu`.
+`sae` / `yae` / `chitose` は `mio` / `mayu` と自由に組み合わせられます。
+`sae` / `yae` / `chitose` can be combined freely with `mio` / `mayu`.
 
 ## 衣装と動作確認の範囲 / Costumes and what has been checked
 
@@ -129,7 +130,7 @@ Costumes are paired one-to-one in costume menu order (Mio's nth ↔ Mayu's nth).
 - **ムービーにも入れ替えを反映するには、オプションの「表示設定」→「ムービー中の衣装」を
   「現在の衣装」にします。** その場で描画されるので入れ替えた姿になります。「通常衣装」「DDX衣装」は、
   その衣装で録画された動画が再生されるので、元の姿のままです。
-  **For movies to show the swap, set the option for the outfit shown in movies (display
+  **For movies to show the swap, set "Outfits During Movies" (in Options, under the display
   settings) to "Current Outfit".** They are then rendered in the game; the other two choices
   ("Default Outfit", "DDX Outfit") play videos pre-recorded in those outfits.
 - **紗重・八重は白い着物の 1 着だけです。** どの衣装を選んでもその姿になります（澪の 8 着目を除く）。
@@ -145,6 +146,16 @@ Costumes are paired one-to-one in costume menu order (Mio's nth ↔ Mayu's nth).
   (it is hidden only during gameplay). Hiding it there too would mean rewriting the model
   itself, which would also remove the rope from the real Sae and Yae in events; this is
   hard to avoid with the way the mod works, so no fix is planned for now.
+- **千歳は着物の 1 着だけです**（2.4.0）。どの衣装を選んでもその姿になります（澪の 8 着目を除く）。
+  千歳は双子より背が低く、モデルに足がありません。裾の下に何も描かれないのは、ゲーム本来の姿です。
+  歩く・手をつなぐ・射影機を構える、を `chitose` / `chitose` と `chitose` / `mayu` で確認しています。
+  手をつなぐ瞬間に、一瞬だけ背が伸びて戻ることがあります。本編に登場する千歳には影響しません。
+  **Chitose has a single outfit (her kimono)** (2.4.0), shown whichever costume is selected
+  (except Mio's 8th). She is shorter than the twins and her model has no feet; nothing is
+  drawn below the hem, which is how the game's own model is made. Walking, holding hands and
+  aiming the camera have been checked with `chitose` / `chitose` and `chitose` / `mayu`.
+  For a moment when the two take hands she may look taller, then goes back. The Chitose who
+  appears in the story is not affected.
 
 ## 他の Mod との併用 / Using it with other mods
 
@@ -288,6 +299,35 @@ With `Rope=0` the rope stays hidden during gameplay, where the twins' characters
 groups by number, but cutscenes seem to apply the model definition's display presets by group
 name, so it shows up there. Zeroing the parts' index counts would hide it everywhere, but also
 on the real Sae and Yae, who use the same models, so that is not done.
+
+### 千歳 / Chitose
+
+千歳のモデル（高精細 g1m `0x91C71644`、軽量 `0x171B23BA`）は、骨格が双子より小さく作られています。
+双子のモーションは腰の骨を双子の高さに置くので、そのまま付けると体が持ち上がって足元が浮きます。
+そこで骨格（G1MS）を書き換えます。モーションが位置を与える骨は初期値を変えても上書きされるので、
+体は「体の親の骨の、子」を下げ、腰の直下にある補助の骨（手をつなぐときの目標など。一部は
+モーションが位置を与える）は、補助の骨の 1 本を下げ役にしてその子に付け替えます。体だけを下げると、
+手をつなぐときに袖が伸びて体が浮きました。
+
+書き換えたモデルは、本来の千歳に影響しないよう、別のファイルに置きます。置き場所は、見た目として
+使われていない方の双子の初期衣装（高精細・軽量）で、g1m / grp / mtl / oid / ktid の 5 つを千歳の
+もので上書きし、`chitose` を指定した枠はそのモデル定義を指します。双子の枠はすべてこの Mod が
+書き換えるので、置き場所のモデル定義を指す枠は千歳のものだけになります。
+
+Chitose's models (high detail g1m `0x91C71644`, low detail `0x171B23BA`) have a smaller
+skeleton than the twins'. The twins' animations put the hip bone at the twins' height, so
+used as they are the body is lifted and floats. The skeleton (G1MS) is therefore rewritten.
+A bone the animations give a position to ignores its rest value, so the body is lowered at
+the children of the body's parent bone, and the helper bones right under the hip (targets
+for holding hands and the like, some of them positioned by the animations) are re-parented
+under one helper bone that is lowered. Lowering the body alone stretched the sleeves and
+lifted the body when the two held hands.
+
+To leave the real Chitose alone, the rewritten model lives in other files: the default
+costume (high and low detail) of whichever twin's look is not in use. Its g1m / grp / mtl /
+oid / ktid are overwritten with Chitose's, and slots set to `chitose` point at that model
+definition. Every slot of the twins is rewritten by this mod, so only Chitose's slots end up
+pointing there.
 
 ### 目隠し / The blindfold
 

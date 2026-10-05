@@ -26,6 +26,7 @@
 // ログは英語で書く（利用者が自分で状況を判断できるように）。コメントは日本語。
 
 #include <windows.h>
+#include <cmath>
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
@@ -49,17 +50,17 @@ using mixednuts::Utf8;
 using mixednuts::Wr;
 using mixednuts::file::ReadAt;
 
-constexpr char     kVersion[]  = "2.3.0";
-constexpr char     kCacheTag[] = "twinswap-v6";   // 生成ロジックを変えたら上げる
+constexpr char     kVersion[]  = "2.4.0";
+constexpr char     kCacheTag[] = "twinswap-v17";   // 生成ロジックを変えたら上げる
 constexpr uint32_t kFdataHash  = 0xFFFE7510;
 
 const wchar_t kRdb[] = L"fdata_package\\root.rdb";
 const wchar_t kRdx[] = L"fdata_package\\root.rdx";
 
 // 見た目の選択肢。ini の値もこの名前
-enum Look { kMio, kMayu, kSae, kYae };
-const wchar_t* const kLookNames[] = {L"mio", L"mayu", L"sae", L"yae"};
-const char* const    kLookNamesA[] = {"mio", "mayu", "sae", "yae"};
+enum Look { kMio, kMayu, kSae, kYae, kChitose };
+const wchar_t* const kLookNames[] = {L"mio", L"mayu", L"sae", L"yae", L"chitose"};
+const char* const    kLookNamesA[] = {"mio", "mayu", "sae", "yae", "chitose"};
 
 bool g_enabled = true;
 Look g_main = kMayu;   // 操作キャラ（本編の澪）の見た目
@@ -108,6 +109,34 @@ const uint32_t kMayuDefs[7][2] = {
 constexpr uint32_t kSaeDef = 0x47095B30;   // g1m 0x9649abe6
 constexpr uint32_t kYaeDef = 0xAA5CC277;   // g1m 0xe92e0aff
 
+// 立花千歳。顔は常時表示のグループ 0 にあり、ほかのグループ（7f621c22 / abdec7fe）は目まわりの
+// 差分で、双子のキャラが表示する 7f621c22 で足りるので、グループの修正は要らない。
+// 千歳は背が低く、腰の骨の高さが 74.16（双子は 87.25）。双子のモーションは腰を 87.25 に置くので、
+// そのままでは体が 13.09 持ち上がって足が浮く。骨格を書き換えて合わせる（FitChitose）
+constexpr float kChitoseDrop = 87.25f - 74.16f;
+
+// 千歳の骨格は双子のモーションに合わせて書き換えるので、本来の千歳（別の枠から同じモデルを
+// 使う）に影響しないよう、書き換えたモデルは別のファイルに置く。置き場所は、見た目として
+// 使われていない方の双子の初期衣装（高精細・軽量）。双子の枠はすべてこの Mod が書き換えるので、
+// そのモデル定義を指す枠は千歳の見た目のものだけになる。
+// モデル定義が参照するファイルのうち、g1m / grp / mtl / oid / ktid の 5 つを千歳のもので上書きする
+// （oid は g1m のエントリの付属データが、ktid はモデル定義が間接的に参照している）
+struct ModelFiles { uint32_t def, g1m, grp, mtl, oid, ktid; };
+const ModelFiles kChitoseFiles[2] = {
+    {0x8D206A12, 0x91C71644, 0x98B6A7C2, 0x92022E82, 0x83C14FBD, 0xF4A640B7},
+    {0xBC9476DC, 0x171B23BA, 0x1E0AB538, 0x17563BF8, 0x09155D33, 0x19D3E201}};
+const ModelFiles kMayuFiles[2] = {
+    {0x49118300, 0x7DCC4616, 0x84BBD794, 0x7E075E54, 0x6FC67F8F, 0x89470B25},
+    {0x0B93BA76, 0xD9C21C60, 0xE0B1ADDE, 0xD9FD349E, 0xCBBC55D9, 0xAC0BFE1B}};
+const ModelFiles kMioFiles[2] = {
+    {0x511668A8, 0xCADE596E, 0xD1CDEAEC, 0xCB1971AC, 0xBCD892E7, 0xDE7762CD},
+    {0x36546A72, 0xB50F91E4, 0xBBFF2362, 0xB54AAA22, 0xA709CB5D, 0x3A6D3917}};
+
+const ModelFiles* ChitoseHome()
+{
+    return (g_main == kMayu || g_sub == kMayu) ? kMioFiles : kMayuFiles;
+}
+
 uint32_t DefFor(Look look, int costume, int detail)
 {
     switch (look)
@@ -115,7 +144,8 @@ uint32_t DefFor(Look look, int costume, int detail)
     case kMio:  return kMioDefs[costume][detail];
     case kMayu: return kMayuDefs[costume][detail];
     case kSae:  return kSaeDef;
-    default:    return kYaeDef;
+    case kYae:  return kYaeDef;
+    default:    return ChitoseHome()[detail].def;
     }
 }
 
@@ -477,6 +507,66 @@ bool HideGroups(File& g1m, const File& grp, const uint32_t* names, size_t count)
     return true;
 }
 
+// 千歳のモデルの骨格（G1MS）を、双子のモーションで足が浮かないように書き換える。
+// 骨 1 本は 48 バイト: 拡大 3f, 親 i32, 回転 4f, 位置 4f（親からの相対値）。+28 から骨 ID の表
+// （ID → 骨の番号）。モーションは骨を ID で指す。
+// 腰の骨（1 番、回転なし）の子は、体の親（2 番）と、補助の骨（68〜107 番）。モーションが位置を
+// 与えるのは 1 番、2 番と、補助の骨の一部（68〜74 番 = ID 107〜113）で、ほかは回転だけ。
+// 位置を与えられる骨は、初期値を下げても上書きされる。そこで:
+// - 腰の初期位置を kChitoseDrop だけ上げる（モーションが置く高さになる。以下はその分を下で戻す）
+// - 体: 2 番はそのままにして、2 番の子を下げる。2 番は回転 (0.5, 0.5, 0.5, 0.5) を持ち、
+//   2 番から見た X が上向きにあたる
+// - 補助の骨: 親を下げるしかないので、68 番を下げ役にする。75 番（ID 114。モーションが何も
+//   与えず、頂点も付いていない）に 68 番の値を写して ID の表で 2 本を入れ替え、68 番を腰から
+//   (0, -kChitoseDrop, 0) に置き、69 番以降の腰の子を 68 番の子にする
+// こうすると、2 番と 68 番以外の骨の初期の位置（スキニングと布の基準）は変わらない。
+// 体だけ下げると、手をつなぐときに袖が伸びて体が浮いた（手の目標の骨が取り残される）。
+// 親の番号が子より大きくなる付け替えは、布（裾と垂れた髪）が消えた。骨を足すのは起動時に止まった
+bool FitChitose(File& g1m)
+{
+    constexpr uint16_t kHelper = 68, kSpare = 75, kHelperId = 107, kSpareId = 114;
+    auto& d = g1m.data;
+    if (d.size() < 0x18) return false;
+    size_t o = Rd<uint32_t>(&d[0xC]);
+    for (;;)
+    {
+        if (o + 0x20 > d.size()) return false;
+        if (memcmp(&d[o], "SM1G", 4) == 0) break;   // "G1MS" が逆順で入っている
+        const uint32_t len = Rd<uint32_t>(&d[o + 8]);
+        if (len == 0) return false;
+        o += len;
+    }
+    const uint32_t jo = Rd<uint32_t>(&d[o + 12]);
+    const uint16_t jc = Rd<uint16_t>(&d[o + 20]), ids = Rd<uint16_t>(&d[o + 22]);
+    if (jc <= kSpare || ids <= kSpareId || 28ull + 2 * ids > jo || o + jo + 48ull * jc > d.size())
+        return false;
+    uint8_t* joints = &d[o + jo];
+    uint8_t* table = &d[o + 28];
+    auto parent = [&](uint16_t j) { return Rd<int32_t>(joints + 48 * j + 12); };
+    if (parent(2) != 1 || parent(kHelper) != 1 || parent(kSpare) != 1 ||
+        Rd<uint16_t>(table + 2 * kHelperId) != kHelper || Rd<uint16_t>(table + 2 * kSpareId) != kSpare)
+        return false;
+    for (int k = 0; k < 4; ++k)
+        if (fabsf(Rd<float>(joints + 48 * 2 + 16 + 4 * k) - 0.5f) > 0.001f) return false;
+    for (uint16_t j = 3; j < kHelper; ++j)
+        if (parent(j) == 1) return false;   // 68 番より前に、腰の子は 2 番しかいないこと
+
+    memcpy(joints + 48 * kSpare, joints + 48 * kHelper, 48);
+    Wr<uint16_t>(table + 2 * kHelperId, kSpare);
+    Wr<uint16_t>(table + 2 * kSpareId, kHelper);
+    Wr<float>(joints + 48 + 36, Rd<float>(joints + 48 + 36) + kChitoseDrop);
+    Wr<float>(joints + 48 * kHelper + 32, 0.0f);
+    Wr<float>(joints + 48 * kHelper + 36, -kChitoseDrop);
+    Wr<float>(joints + 48 * kHelper + 40, 0.0f);
+    for (uint16_t j = 3; j < jc; ++j)
+    {
+        uint8_t* joint = joints + 48 * j;
+        if (parent(j) == 2) Wr<float>(joint + 32, Rd<float>(joint + 32) - kChitoseDrop);
+        else if (parent(j) == 1 && j > kHelper) Wr<int32_t>(joint + 12, kHelper);
+    }
+    return true;
+}
+
 // ---- 生成 ---------------------------------------------------------------
 
 // 現在の内容を丸ごと読む（先に読み込まれた Mod の改変を含む）
@@ -541,6 +631,29 @@ bool Generate()
         if (!merged && !hidden) continue;
         files.push_back(std::move(g1m));
         if (merged) files.push_back(std::move(grp));
+        ++fixed;
+    }
+    // 千歳: 骨格を双子のモーションに合わせたモデルを、使っていない双子の初期衣装に置く
+    for (int k = 0; k < 2 && (g_main == kChitose || g_sub == kChitose); ++k)
+    {
+        const ModelFiles& from = kChitoseFiles[k];
+        const ModelFiles& to = ChitoseHome()[k];
+        const uint32_t pairs[5][2] = {
+            {from.g1m, to.g1m}, {from.grp, to.grp}, {from.mtl, to.mtl}, {from.oid, to.oid},
+            {from.ktid, to.ktid}};
+        for (const auto& pair : pairs)
+        {
+            // 中身は千歳、エントリの付属データは置き場所のものを使う
+            File chitose, home;
+            if (!ReadEntry(src, pair[0], chitose) || !ReadEntry(src, pair[1], home)) return false;
+            if (pair[0] == from.g1m && !FitChitose(chitose))
+            {
+                Log("[NG] g1m 0x%08X: could not fit Chitose's skeleton", pair[0]);
+                return false;
+            }
+            home.data = std::move(chitose.data);
+            files.push_back(std::move(home));
+        }
         ++fixed;
     }
     // 紗重・八重は縄のグループを常時表示にする（双子のキャラはこの 2 つを表示しない）
@@ -654,9 +767,9 @@ int GenerateSwap(void*, const MixedNutsPatchIo* io, char* note, size_t cap)
 Look ReadLook(const std::wstring& ini, const wchar_t* key, Look def, Look own)
 {
     const std::wstring s = mixednuts::ini::String(ini, L"Swap", key, kLookNames[def]);
-    for (int i = kMio; i <= kYae; ++i)
+    for (int i = kMio; i <= kChitose; ++i)
         if (_wcsicmp(s.c_str(), kLookNames[i]) == 0) return static_cast<Look>(i);
-    Log("[NG] [Swap] %s=%s is not mio, mayu, sae or yae; keeping the original look (%s)",
+    Log("[NG] [Swap] %s=%s is not mio, mayu, sae, yae or chitose; keeping the original look (%s)",
         Utf8(key).c_str(), Utf8(s).c_str(), kLookNamesA[own]);
     return own;
 }
@@ -670,6 +783,7 @@ void LoadConfig()
     g_main = ReadLook(file, L"Main", kMayu, kMio);
     g_sub  = ReadLook(file, L"Sub", kMio, kMayu);
     g_rope = ini::Bool(file, L"Swap", L"Rope", true);
+
 
     const std::wstring bf = ini::String(file, L"Swap", L"Blindfold", L"default");
     if (_wcsicmp(bf.c_str(), L"show") == 0) g_blindfold = kBfShow;
@@ -700,7 +814,7 @@ MIXEDNUTS_PLUGIN_EXPORT int WINAPI MixedNutsPluginInit(const MixedNutsApi* api)
     }
 
     // tag には結果に影響する設定も入れる。変わればローダーが作り直す
-    static char tag[96];
+    static char tag[128];
     sprintf_s(tag, "%s main=%s sub=%s rope=%d blindfold=%s", kCacheTag, kLookNamesA[g_main],
               kLookNamesA[g_sub], g_rope ? 1 : 0, kBlindfoldNames[g_blindfold]);
     static const wchar_t* const targets[] = { kRdb, kRdx, nullptr };
