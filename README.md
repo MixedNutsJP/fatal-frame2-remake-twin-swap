@@ -5,12 +5,15 @@ A mod for FATAL FRAME / PROJECT ZERO II: Crimson Butterfly REMAKE (Steam, AppID 
 
 操作キャラ（澪）と同行キャラ（繭）の**見た目を入れ替えます**。繭を操作して澪を連れて歩く、
 二人とも繭、二人とも澪、の 3 通りを設定ファイルで選べます。2.1.0 からは**黒澤紗重・黒澤八重**、
-2.4.0 からは**立花千歳**の姿も選べます。
+2.4.0 からは**立花千歳**、2.5.0 からは**須藤美也子**の姿も選べます。紗重・八重・千歳・澪・繭は、
+肌の色（生きている人の肌 / 幽霊の肌）も選べます。
 入れ替わるのはモデル（顔・髪・体・衣装）だけで、動き・声・字幕・ストーリーは元のままです。
 
 **Swaps the looks of the player character (Mio) and the companion (Mayu).** Play as Mayu
 with Mio at your side, or make both twins Mayu or both Mio, chosen in a config file.
-From 2.1.0, **Sae and Yae Kurosawa** can be chosen too, and from 2.4.0 **Chitose Tachibana**.
+From 2.1.0, **Sae and Yae Kurosawa** can be chosen too, from 2.4.0 **Chitose Tachibana**, and
+from 2.5.0 **Miyako Sudo**. Skin tones (living or ghostly) can be chosen for Sae, Yae, Chitose,
+Mio and Mayu.
 Only the models (face, hair, body and costume) change; animations, voices, subtitles
 and the story stay as they are.
 
@@ -85,12 +88,15 @@ at 1.x, update them all at once; see the loader's README for details. You may co
 
 | 項目 / Key | 意味 / Meaning |
 |---|---|
-| `Main` | 操作キャラ（本編の澪）の見た目。`mio` / `mayu` / `sae` / `yae` / `chitose`、既定 `mayu` / Look of the player character (Mio in the story). Default `mayu` |
+| `Main` | 操作キャラ（本編の澪）の見た目。`mio` / `mayu` / `sae` / `yae` / `chitose` / `miyako`、既定 `mayu` / Look of the player character (Mio in the story). Default `mayu` |
 | `Sub` | 同行キャラ（本編の繭）の見た目。値は `Main` と同じ、既定 `mio` / Look of the companion (Mayu in the story). Same values, default `mio` |
 | `Rope` | 紗重・八重の赤い縄。`1` = 表示（既定）/ `0` = 非表示 / Sae's and Yae's red rope. `1` = show (default) / `0` = hide |
 | `Blindfold` | 澪の 2 着目（夏のカーディガン）の目隠し。`default` = ゲームのまま（既定）/ `show` = 常に表示 / `hide` = 常に非表示 / The blindfold on Mio's 2nd costume (summer cardigan). `default` = as the game does (default) / `show` = always shown / `hide` = never shown |
 | `ChitoseSkin` | 千歳の肌。`default` = ゲームのまま（幽霊の白い肌、既定）/ `human` = 生きている人の肌色 / Chitose's skin. `default` = as the game does (a ghost's pale skin, default) / `human` = a living skin tone |
-| `SaeYaeSkin` | 紗重・八重の肌。`default` = ゲームのまま（生前の肌色、既定）/ `ghost` = 幽霊の白い肌 / Sae's and Yae's skin. `default` = as the game does (alive, default) / `ghost` = a ghost's pale skin |
+| `SaeYaeSkin` | 紗重・八重の肌。`default` = ゲームのまま（生前の肌色、既定）/ `ghost` = 幽霊の白い肌 / `blue` = 幽霊の青白い肌（首に赤い痕が入る）/ Sae's and Yae's skin. `default` = as the game does (alive, default) / `ghost` = a ghost's white skin / `blue` = a ghost's bluish skin, with a red mark around the neck |
+| `SaeYaeNeckMark` | `SaeYaeSkin=ghost` のとき、首に絞められた痕を付けるか。`0` = 付けない（既定）/ `1` = 付ける / With `SaeYaeSkin=ghost`, a strangle mark around the neck. `0` = no (default) / `1` = yes |
+| `SaeYaeKimono` | 紗重・八重の着物。`default` = ゲームのまま（既定）/ `bloody` = 血の付いた着物 / Sae's and Yae's kimono. `default` = as the game does (default) / `bloody` = blood-stained |
+| `MioSkin` / `MayuSkin` | 澪・繭の肌。`default` = ゲームのまま（既定）/ `ghost` = 幽霊の白い肌（一部の衣装だけ。下を参照）/ Mio's / Mayu's skin. `default` = as the game does (default) / `ghost` = a ghost's pale skin (only in some costumes, see below) |
 | `Enabled` | `1` = 有効 on / `0` = 無効 off |
 | `Log` | `1` = ログを出力 write a log / `0` = 出力しない no log |
 
@@ -102,9 +108,15 @@ at 1.x, update them all at once; see the loader's README for details. You may co
 | `mio` | `mayu` | 元のまま / vanilla |
 | `sae` | `yae` | 紗重を操作して八重を連れて歩く / play as Sae with Yae at your side |
 | `chitose` | `mayu` | 千歳を操作して繭を連れて歩く / play as Chitose with Mayu at your side |
+| `miyako` | `mayu` | 美也子を操作して繭を連れて歩く / play as Miyako with Mayu at your side |
 
-`sae` / `yae` / `chitose` は `mio` / `mayu` と自由に組み合わせられます。
-`sae` / `yae` / `chitose` can be combined freely with `mio` / `mayu`.
+`sae` / `yae` / `chitose` / `miyako` は `mio` / `mayu` と自由に組み合わせられます。
+`sae` / `yae` / `chitose` / `miyako` can be combined freely with `mio` / `mayu`.
+
+肌や着物の設定はキャラごとで、`Main` / `Sub` ごとではありません（二人とも紗重にすると、二人とも
+同じ肌・同じ着物になります）。
+The skin and kimono settings apply to the character, not to `Main` or `Sub` (with two Saes,
+both get the same skin and kimono).
 
 ## 衣装と動作確認の範囲 / Costumes and what has been checked
 
@@ -168,16 +180,52 @@ Costumes are paired one-to-one in costume menu order (Mio's nth ↔ Mayu's nth).
   aiming the camera have been checked with `chitose` / `chitose` and `chitose` / `mayu`.
   For a moment when the two take hands she may look taller, then goes back. The Chitose who
   appears in the story is not affected.
-- **肌の色を選べます**（2.4.0）。`ChitoseSkin=human` で千歳を生きている人の肌色に、
-  `SaeYaeSkin=ghost` で紗重・八重を幽霊の白い肌にできます。変わるのは顔と手足の色だけで、
-  顔立ちは元のままです。千歳は、目の周りの隈と唇の色に元の灰色が少し残ります。
-  `chitose`（human）/ `sae`（ghost）の組み合わせで確認しています。本編に登場する千歳・紗重・八重
-  には影響しません。
-  **The skin tone can be chosen** (2.4.0). `ChitoseSkin=human` gives Chitose a living skin
-  tone, and `SaeYaeSkin=ghost` gives Sae and Yae a ghost's pale skin. Only the colour of the
-  face, hands and feet changes; the features stay as they are. On Chitose a little of the
-  original grey remains around the eyes and on the lips. Checked with `chitose` (human) /
-  `sae` (ghost). The Chitose, Sae and Yae who appear in the story are not affected.
+- **美也子はブラウスとスカートの 1 着だけです**（2.5.0）。どの衣装を選んでもその姿になります
+  （澪の 8 着目を除く）。美也子は双子より背が高いので、双子のモーションで地面に立てるように骨格を
+  調整しています。`miyako` / `mayu` で、歩く・手をつなぐ、を確認しています。手をつなぐ瞬間に、
+  一瞬だけ表示が崩れます。本編に登場する美也子には影響しません。
+  **Miyako has a single outfit (her blouse and skirt)** (2.5.0), shown whichever costume is
+  selected (except Mio's 8th). She is taller than the twins, so her skeleton is adjusted to
+  stand on the ground with the twins' animations. Walking and holding hands were checked with
+  `miyako` / `mayu`. For a moment when the two take hands, her model is drawn distorted. The
+  Miyako who appears in the story is not affected.
+- **肌の色を選べます。** 変わるのは肌（と、紗重・八重では着物）のテクスチャだけで、モデルの形は
+  変わりません。本編に登場する千歳・紗重・八重には影響しません。
+  - **千歳**: `ChitoseSkin=human` で、生きている人の肌色になります（2.4.0）。紗重の肌の色味を移して
+    作るので、目の周りの隈と唇の色に元の灰色が少し残ります。
+  - **紗重・八重**: `SaeYaeSkin=ghost` で幽霊の白い肌、`SaeYaeSkin=blue` で幽霊の青白い肌になります
+    （2.5.0）。`ghost` のときは `SaeYaeNeckMark=1` で首に絞められた痕を付けられます（`blue` には
+    最初から赤い痕が入っています）。`SaeYaeKimono=bloody` で、血の付いた着物になります。
+    ゲームに入っている幽霊の姿の紗重のテクスチャをそのまま使っています。足元が消える表現や、
+    傷の盛り上がりは付きません。`sae` で、`blue` + `bloody`、`ghost` + 痕あり + `bloody`、
+    `ghost` + 痕なし + きれいな着物、の 3 通りを確認しています。
+    **2.4.0 の `SaeYaeSkin=ghost` とは見た目が変わります**（2.4.0 は千歳の色味を移して作って
+    いました）。
+  - **澪・繭**: `MioSkin=ghost` / `MayuSkin=ghost` で、幽霊の白い肌になります（2.5.0）。
+    **対象は一部の衣装だけです**（澪の 4・6・7・8 着目、繭の 2・6・7 着目）。初期衣装などは、顔の
+    テクスチャが別の形式のため変わりません。繭の 6 着目が、血の付いた白い着物です。
+    千歳の肌の色味を移して作っています。双子はモデルの写しを作らないので、双子が映る場面すべてで
+    肌が変わります。繭の 6 着目で確認しています。
+  **The skin tone can be chosen.** Only the skin textures (and, for Sae and Yae, the kimono's)
+  change; the shape of the model does not. The Chitose, Sae and Yae who appear in the story are
+  not affected.
+  - **Chitose**: `ChitoseSkin=human` gives her a living skin tone (2.4.0). It is made by
+    transferring Sae's skin tone, so a little of the original grey remains around the eyes and
+    on the lips.
+  - **Sae and Yae**: `SaeYaeSkin=ghost` gives a ghost's white skin and `SaeYaeSkin=blue` a
+    ghost's bluish skin (2.5.0). With `ghost`, `SaeYaeNeckMark=1` adds a strangle mark around
+    the neck (`blue` always has a red one). `SaeYaeKimono=bloody` gives a blood-stained kimono.
+    These use the textures of the ghostly Sae models that are in the game, as they are. The
+    fading feet and the raised wounds of those models are not reproduced. Checked with `sae`:
+    `blue` + `bloody`, `ghost` + mark + `bloody`, and `ghost` + no mark + clean kimono.
+    **`SaeYaeSkin=ghost` looks different from 2.4.0**, where it was made by transferring
+    Chitose's skin tone.
+  - **Mio and Mayu**: `MioSkin=ghost` / `MayuSkin=ghost` give a ghost's pale skin (2.5.0),
+    **only in some costumes**: Mio's 4th, 6th, 7th and 8th, Mayu's 2nd, 6th and 7th. In the
+    others, such as the default costumes, the face texture is in a different format and is left
+    as it is. Mayu's 6th is the blood-stained white kimono. It is made by transferring Chitose's
+    skin tone. No copy is made of the twins' models, so the skin changes wherever the twins are
+    shown. Checked with Mayu's 6th costume.
 
 ## 他の Mod との併用 / Using it with other mods
 
@@ -366,22 +414,55 @@ oid / ktid are overwritten with Chitose's, and slots set to `chitose` point at t
 definition. Every slot of the twins is rewritten by this mod, so only Chitose's slots end up
 pointing there.
 
+### 美也子 / Miyako
+
+美也子のモデル（g1m `0xAEF9D214`）は 1 体だけで、千歳と同じく写しを使います。骨格の作りは千歳と
+同じですが、腰の高さが双子より高い（93.0）ので、同じ調整を逆向きに使って体を持ち上げます。
+垂れた髪は双子のキャラが表示しないグループにあるので、常時表示のグループへ移します。
+
+Miyako has a single model (g1m `0xAEF9D214`), used through a copy like Chitose's. Its skeleton
+is laid out like Chitose's, but the hip is higher than the twins' (93.0), so the same
+adjustment is applied the other way round to raise the body. Her hanging hair sits in a group
+the twins' characters do not show, so it is moved into the always-visible group.
+
 ### 肌の色 / Skin tone
 
-千歳・紗重・八重は、顔と手足の色テクスチャの配置（UV）が同じです。そこで、色を変える側の
-テクスチャに、もう一方の「なだらかな色の分布」を場所ごとの比として掛けます（千歳には紗重の、
-紗重・八重には千歳の色味）。絵柄は元のままで、肌の色だけが移ります。テクスチャ（BC1）を展開し、
-色を移し、ミップを作り直して圧縮し直すところまで、起動時にゲームのファイルから行います。
-できたテクスチャは、置き場所の双子だけが使っているテクスチャの枠に置き、モデルの写しの
-ktid（テクスチャの一覧）をその枠へ向けます。
+方法は 2 つあります。
 
-Chitose, Sae and Yae share the layout (UVs) of their face and hand/foot colour textures. The
+**色味を移す（千歳の人間の肌、澪・繭の幽霊の肌）。** 千歳・紗重・八重と、双子の一部の衣装は、顔の
+色テクスチャの配置（UV）が同じです。そこで、色を変える側のテクスチャに、もう一方の「なだらかな
+色の分布」を場所ごとの比として掛けます（千歳には紗重の、澪・繭には千歳の色味）。絵柄は元のままで、
+肌の色だけが移ります。双子の体のテクスチャは配置が違うので、全体の平均の色の比を一律に掛けます。
+テクスチャ（BC1）を展開し、色を移し、ミップを作り直して圧縮し直すところまで、起動時にゲームの
+ファイルから行います。千歳では、できたテクスチャを、置き場所の双子だけが使っているテクスチャの
+枠に置き、モデルの写しの ktid（テクスチャの一覧）をその枠へ向けます。双子では、テクスチャを
+その場で差し替えます。
+
+**テクスチャを付け替える（紗重・八重の幽霊の姿）。** ゲームには、幽霊の姿の紗重のモデルが 3 体
+入っていて、テクスチャの配置が紗重・八重と同じです。紗重・八重の写しの ktid で、顔・手足・着物
+などの番号ごとに、参照するテクスチャをそのモデルのものへ付け替えます。色の加工はしません。
+幽霊のモデルそのものを見た目にする方法も試しましたが、3 体のうち 2 体は骨の並びが紗重と違い、
+首が伸びて着物がねじれました（並びを合わせて直すとゲームが落ちました）。
+
+There are two methods.
+
+**Transferring the tone (Chitose's living skin, Mio's and Mayu's ghost skin).** Chitose, Sae,
+Yae and some of the twins' costumes share the layout (UVs) of the face colour texture. The
 texture being changed is multiplied, place by place, by the ratio of the other's smoothed
-colours to its own (Sae's tone for Chitose, Chitose's for Sae and Yae): the painted detail
-stays and only the skin tone moves across. Decoding the textures (BC1), transferring the
-tone, rebuilding the mipmaps and compressing them again is all done from the game's files at
-startup. The result is stored in texture slots used only by the twin that hosts the copy, and
-the copy's ktid (texture list) is pointed at those slots.
+colours to its own (Sae's tone for Chitose, Chitose's for Mio and Mayu): the painted detail
+stays and only the skin tone moves across. The twins' body textures are laid out differently,
+so those are multiplied by one ratio, that of the average colours. Decoding the textures (BC1),
+transferring the tone, rebuilding the mipmaps and compressing them again is all done from the
+game's files at startup. For Chitose the result is stored in texture slots used only by the
+twin that hosts the copy, and the copy's ktid (texture list) is pointed at those slots. For the
+twins the textures are replaced in place.
+
+**Pointing at other textures (the ghostly looks of Sae and Yae).** The game contains three
+models of a ghostly Sae whose textures are laid out like Sae's and Yae's. In the ktid of the
+copy, the entries for the face, the hands and feet and the kimono are pointed at those models'
+textures. No colours are processed. Using the ghost models themselves as looks was tried too,
+but two of the three have their bones in a different order from Sae's: the neck stretched and
+the kimono twisted (and reordering them to match made the game crash).
 
 ### 目隠し / The blindfold
 

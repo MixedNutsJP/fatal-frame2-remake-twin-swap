@@ -51,8 +51,8 @@ using mixednuts::Utf8;
 using mixednuts::Wr;
 using mixednuts::file::ReadAt;
 
-constexpr char     kVersion[]  = "2.4.0";
-constexpr char     kCacheTag[] = "twinswap-v28";   // 生成ロジックを変えたら上げる
+constexpr char     kVersion[]  = "2.5.0";
+constexpr char     kCacheTag[] = "twinswap-v29";   // 生成ロジックを変えたら上げる
 constexpr uint32_t kFdataHash  = 0xFFFE7510;
 
 const wchar_t kRdb[] = L"fdata_package\\root.rdb";
@@ -1232,7 +1232,7 @@ Look ReadLook(const std::wstring& ini, const wchar_t* key, Look def, Look own)
     const std::wstring s = mixednuts::ini::String(ini, L"Swap", key, kLookNames[def]);
     for (int i = kMio; i <= kMiyako; ++i)
         if (_wcsicmp(s.c_str(), kLookNames[i]) == 0) return static_cast<Look>(i);
-    Log("[NG] [Swap] %s=%s is not mio, mayu, sae, yae or chitose; keeping the original look (%s)",
+    Log("[NG] [Swap] %s=%s is not mio, mayu, sae, yae, chitose or miyako; keeping the original look (%s)",
         Utf8(key).c_str(), Utf8(s).c_str(), kLookNamesA[own]);
     return own;
 }
