@@ -1,6 +1,7 @@
 # 肌の色味を別のテクスチャから移す処理の参照実装（DLL と同じ整数演算で、出力はバイト単位で一致する）。
 #
-#   recolor(target_g1t, source_g1t) -> bytes
+#   recolor(target_g1t, source_g1t, uniform=False) -> bytes
+#   uniform=True は、配置の違うテクスチャ同士（双子の体と千歳の手足）で、全体の平均の比を一律に掛ける
 #
 # target の絵柄を保ったまま、source の「なだらかな色の分布」を移す。顔・手のテクスチャは、
 # 千歳・紗重・八重で配置（UV）が同じなので、場所ごとの色の比を掛ければ、肌の色だけが移る。
@@ -110,13 +111,25 @@ def transfer(target, source):
     return np.minimum(255, (target.astype(np.int64) * r + 2048) >> 12)
 
 
-def recolor(target_g1t, source_g1t):
+def transfer_uniform(target, source):
+    """配置の違うテクスチャ同士で使う。全体の平均の色の比（12 ビット固定小数）を一律に掛ける"""
+    def mean(img):   # 8 ビット固定小数
+        return (img.astype(np.int64).sum((0, 1)) << 8) // (img.shape[0] * img.shape[1])
+    ratio = np.minimum(RATIO_MAX, ((mean(source) + (BIAS << 8)) << 12) // (mean(target) + (BIAS << 8)))
+    return np.minimum(255, (target.astype(np.int64) * ratio + 2048) >> 12)
+
+
+def recolor(target_g1t, source_g1t, uniform=False):
     w, h, mips, data = g1t_info(target_g1t)
-    assert g1t_info(source_g1t)[:3] == (w, h, mips), 'the two textures differ in size'
+    sw, sh, smips, sdata = g1t_info(source_g1t)
     top = (w // 4) * (h // 4) * 8
-    sdata = g1t_info(source_g1t)[3]
-    img = transfer(bc1_decode(target_g1t[data:data + top], w, h),
-                   bc1_decode(source_g1t[sdata:sdata + top], w, h))
+    if uniform:
+        img = transfer_uniform(bc1_decode(target_g1t[data:data + top], w, h),
+                               bc1_decode(source_g1t[sdata:sdata + (sw // 4) * (sh // 4) * 8], sw, sh))
+    else:
+        assert (sw, sh, smips) == (w, h, mips), 'the two textures differ in size'
+        img = transfer(bc1_decode(target_g1t[data:data + top], w, h),
+                       bc1_decode(source_g1t[sdata:sdata + top], w, h))
     out = bytearray(target_g1t[:data])
     for m in range(mips):
         out += bc1_encode(img)

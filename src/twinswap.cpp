@@ -52,7 +52,7 @@ using mixednuts::Wr;
 using mixednuts::file::ReadAt;
 
 constexpr char     kVersion[]  = "2.4.0";
-constexpr char     kCacheTag[] = "twinswap-v23";   // 生成ロジックを変えたら上げる
+constexpr char     kCacheTag[] = "twinswap-v24";   // 生成ロジックを変えたら上げる
 constexpr uint32_t kFdataHash  = 0xFFFE7510;
 
 const wchar_t kRdb[] = L"fdata_package\\root.rdb";
@@ -69,6 +69,8 @@ Look g_sub  = kMio;    // 同行キャラ（本編の繭）の見た目
 bool g_rope = true;    // 紗重・八重の赤い縄を表示するか
 bool g_chitoseHuman = false;   // 千歳の肌を人間の色にするか
 bool g_saeYaeGhost  = false;   // 紗重・八重の肌を幽霊の色にするか
+bool g_mioGhost     = false;   // 澪の肌を幽霊の色にするか
+bool g_mayuGhost    = false;   // 繭の肌を幽霊の色にするか
 
 // 澪の夏のカーディガン（2 着目）の目隠し
 enum Blindfold { kBfDefault, kBfShow, kBfHide };
@@ -173,6 +175,15 @@ const Extra& ExtraOf(Look look)
 {
     return look == kSae ? kSaeExtra : look == kYae ? kYaeExtra : kChitoseExtra;
 }
+
+// 澪・繭の肌を幽霊の色にする。顔のテクスチャが千歳・紗重と同じ形式・配置（BC1、2048 角）の
+// 衣装だけが対象（澪の 4・6・7・8 着目、繭の 2・6・7 着目）。初期衣装などは顔が別の形式で、対象外。
+// 顔は千歳の顔から場所ごとに、体（4096x2048 など、配置が違う）は千歳の手足から一律に色味を移す。
+// 双子のモデルは写しを作らず、テクスチャをその場で差し替える（双子が映る場面すべてに効く）
+const uint32_t kMioGhostFaces[]   = {0x2A44B780, 0xBC46A602, 0x85479D43, 0x4E489484};
+const uint32_t kMioGhostBodies[]  = {0xD23346A0, 0x64353522, 0xF63723A4, 0x03DB6C24};
+const uint32_t kMayuGhostFaces[]  = {0x9986BD04, 0xF5FE8080, 0x4D1C715F};
+const uint32_t kMayuGhostBodies[] = {0xEF6A11E4, 0x4BE1D560, 0xA2FFC63F, 0x0B725887};
 
 // 肌の色を変えるか。千歳は人間の肌色に、紗重・八重は幽霊の肌色にできる
 bool SkinChanged(Look look) { return look == kChitose ? g_chitoseHuman : g_saeYaeGhost; }
@@ -767,57 +778,80 @@ void ToneGrid(const std::vector<uint8_t>& img, uint32_t w, uint32_t h, std::vect
     }
 }
 
-// target（g1t）に source（g1t）の色味を移す。大きさとミップ数が同じであること
-bool Recolor(std::vector<uint8_t>& target, const std::vector<uint8_t>& source)
+// target（g1t）に source（g1t）の色味を移す。uniform でなければ、大きさとミップ数が同じであること。
+// uniform は、配置の違うテクスチャ同士（双子の体と千歳の手足）で、全体の平均の比を一律に掛ける
+bool Recolor(std::vector<uint8_t>& target, const std::vector<uint8_t>& source, bool uniform = false)
 {
     G1tInfo t, s;
-    if (!ReadG1t(target, t) || !ReadG1t(source, s) || t.w != s.w || t.h != s.h || t.mips != s.mips)
-        return false;
+    if (!ReadG1t(target, t) || !ReadG1t(source, s)) return false;
+    if (!uniform && (t.w != s.w || t.h != s.h || t.mips != s.mips)) return false;
     const uint32_t w = t.w, h = t.h, gw = w / kToneCell, gh = h / kToneCell;
     std::vector<uint8_t> img, other;
     Bc1Decode(&target[t.data], w, h, img);
-    Bc1Decode(&source[s.data], w, h, other);
-    std::vector<int64_t> lowT, lowS;
-    ToneGrid(img, w, h, lowT);
-    ToneGrid(other, w, h, lowS);
-    int64_t bias = kToneBias * kToneCell * kToneCell;
-    for (int pass = 0; pass < kTonePasses; ++pass) bias *= 16;
-    std::vector<int64_t> ratio(lowT.size());
-    for (size_t i = 0; i < ratio.size(); ++i)
+    Bc1Decode(&source[s.data], s.w, s.h, other);
+    if (uniform)
     {
-        const int64_t r = ((lowS[i] + bias) << 12) / (lowT[i] + bias);
-        ratio[i] = r < kToneMax ? r : kToneMax;
-    }
-    // ピクセル x に対する、左のます目・右のます目・右の重み（0〜127）
-    auto axis = [](uint32_t n, uint32_t g, std::vector<uint32_t>& g0, std::vector<uint32_t>& g1,
-                   std::vector<int64_t>& wt) {
-        g0.resize(n); g1.resize(n); wt.resize(n);
-        for (uint32_t i = 0; i < n; ++i)
+        // 全体の平均の色（8 ビット固定小数）の比を、一律に掛ける
+        int64_t meanT[3] = {}, meanS[3] = {};
+        for (size_t i = 0; i < img.size(); ++i) meanT[i % 3] += img[i];
+        for (size_t i = 0; i < other.size(); ++i) meanS[i % 3] += other[i];
+        for (int k = 0; k < 3; ++k)
         {
-            const int v = 2 * static_cast<int>(i) + 1 - kToneCell;
-            g0[i] = v < 0 ? 0 : static_cast<uint32_t>(v / (2 * kToneCell));
-            wt[i] = v < 0 ? 0 : v % (2 * kToneCell);
-            g1[i] = g0[i] + 1 < g ? g0[i] + 1 : g - 1;
+            meanT[k] = (meanT[k] << 8) / (static_cast<int64_t>(w) * h);
+            meanS[k] = (meanS[k] << 8) / (static_cast<int64_t>(s.w) * s.h);
+            const int64_t r = ((meanS[k] + (kToneBias << 8)) << 12) / (meanT[k] + (kToneBias << 8));
+            meanT[k] = r < kToneMax ? r : kToneMax;   // ここからは比として使う
         }
-    };
-    std::vector<uint32_t> x0, x1, y0, y1;
-    std::vector<int64_t> wx, wy;
-    axis(w, gw, x0, x1, wx);
-    axis(h, gh, y0, y1, wy);
-    const int64_t full = 2 * kToneCell;
-    for (uint32_t y = 0; y < h; ++y)
-        for (uint32_t x = 0; x < w; ++x)
-            for (int k = 0; k < 3; ++k)
+        for (size_t i = 0; i < img.size(); ++i)
+        {
+            const int64_t v = (img[i] * meanT[i % 3] + 2048) >> 12;
+            img[i] = static_cast<uint8_t>(v < 255 ? v : 255);
+        }
+    }
+    else
+    {
+        std::vector<int64_t> lowT, lowS;
+        ToneGrid(img, w, h, lowT);
+        ToneGrid(other, w, h, lowS);
+        int64_t bias = kToneBias * kToneCell * kToneCell;
+        for (int pass = 0; pass < kTonePasses; ++pass) bias *= 16;
+        std::vector<int64_t> ratio(lowT.size());
+        for (size_t i = 0; i < ratio.size(); ++i)
+        {
+            const int64_t r = ((lowS[i] + bias) << 12) / (lowT[i] + bias);
+            ratio[i] = r < kToneMax ? r : kToneMax;
+        }
+        // ピクセル x に対する、左のます目・右のます目・右の重み（0〜127）
+        auto axis = [](uint32_t n, uint32_t g, std::vector<uint32_t>& g0, std::vector<uint32_t>& g1,
+                       std::vector<int64_t>& wt) {
+            g0.resize(n); g1.resize(n); wt.resize(n);
+            for (uint32_t i = 0; i < n; ++i)
             {
-                auto at = [&](uint32_t gy, uint32_t gx) { return ratio[(static_cast<size_t>(gy) * gw + gx) * 3 + k]; };
-                const int64_t r = (at(y0[y], x0[x]) * (full - wx[x]) * (full - wy[y]) +
-                                   at(y0[y], x1[x]) * wx[x] * (full - wy[y]) +
-                                   at(y1[y], x0[x]) * (full - wx[x]) * wy[y] +
-                                   at(y1[y], x1[x]) * wx[x] * wy[y]) >> 14;
-                uint8_t& p = img[(static_cast<size_t>(y) * w + x) * 3 + k];
-                const int64_t v = (p * r + 2048) >> 12;
-                p = static_cast<uint8_t>(v < 255 ? v : 255);
+                const int v = 2 * static_cast<int>(i) + 1 - kToneCell;
+                g0[i] = v < 0 ? 0 : static_cast<uint32_t>(v / (2 * kToneCell));
+                wt[i] = v < 0 ? 0 : v % (2 * kToneCell);
+                g1[i] = g0[i] + 1 < g ? g0[i] + 1 : g - 1;
             }
+        };
+        std::vector<uint32_t> x0, x1, y0, y1;
+        std::vector<int64_t> wx, wy;
+        axis(w, gw, x0, x1, wx);
+        axis(h, gh, y0, y1, wy);
+        const int64_t full = 2 * kToneCell;
+        for (uint32_t y = 0; y < h; ++y)
+            for (uint32_t x = 0; x < w; ++x)
+                for (int k = 0; k < 3; ++k)
+                {
+                    auto at = [&](uint32_t gy, uint32_t gx) { return ratio[(static_cast<size_t>(gy) * gw + gx) * 3 + k]; };
+                    const int64_t r = (at(y0[y], x0[x]) * (full - wx[x]) * (full - wy[y]) +
+                                       at(y0[y], x1[x]) * wx[x] * (full - wy[y]) +
+                                       at(y1[y], x0[x]) * (full - wx[x]) * wy[y] +
+                                       at(y1[y], x1[x]) * wx[x] * wy[y]) >> 14;
+                    uint8_t& p = img[(static_cast<size_t>(y) * w + x) * 3 + k];
+                    const int64_t v = (p * r + 2048) >> 12;
+                    p = static_cast<uint8_t>(v < 255 ? v : 255);
+                }
+    }
     std::vector<uint8_t> out(target.begin(), target.begin() + t.data);
     uint32_t mw = w, mh = h;
     for (uint32_t m = 0; m < t.mips; ++m)
@@ -1007,6 +1041,32 @@ bool Generate()
         ++fixed;
     }
 
+    // 澪・繭の肌を幽霊の色にする（テクスチャをその場で差し替える）
+    for (Look twin : {kMio, kMayu})
+    {
+        if (!(twin == kMio ? g_mioGhost : g_mayuGhost) || (g_main != twin && g_sub != twin)) continue;
+        const uint32_t* faces = twin == kMio ? kMioGhostFaces : kMayuGhostFaces;
+        const uint32_t* bodies = twin == kMio ? kMioGhostBodies : kMayuGhostBodies;
+        const size_t nf = twin == kMio ? sizeof(kMioGhostFaces) / 4 : sizeof(kMayuGhostFaces) / 4;
+        const size_t nb = twin == kMio ? sizeof(kMioGhostBodies) / 4 : sizeof(kMayuGhostBodies) / 4;
+        File face, hand;
+        if (!ReadEntry(src, kChitoseExtra.faceG1t, face) || !ReadEntry(src, kChitoseExtra.handG1t, hand))
+            return false;
+        for (size_t n = 0; n < nf + nb; ++n)
+        {
+            const bool body = n >= nf;
+            File tex;
+            if (!ReadEntry(src, body ? bodies[n - nf] : faces[n], tex)) return false;
+            if (!Recolor(tex.data, body ? hand.data : face.data, body))
+            {
+                Log("[NG] g1t 0x%08X: could not change the skin colour", tex.hash);
+                return false;
+            }
+            files.push_back(std::move(tex));
+        }
+        ++fixed;
+    }
+
     // fdata: "PDRK0000", u32 0x10, u32 全体サイズ、その後に 16 バイト境界でエントリ
     std::vector<uint8_t> fdata(0x10);
     memcpy(fdata.data(), "PDRK0000", 8);
@@ -1131,6 +1191,8 @@ void LoadConfig()
     if (_wcsicmp(ss.c_str(), L"ghost") == 0) g_saeYaeGhost = true;
     else if (_wcsicmp(ss.c_str(), L"default") != 0)
         Log("[NG] [Swap] SaeYaeSkin=%s is not default or ghost; using default", Utf8(ss).c_str());
+    g_mioGhost = _wcsicmp(ini::String(file, L"Swap", L"MioSkin", L"default").c_str(), L"ghost") == 0;
+    g_mayuGhost = _wcsicmp(ini::String(file, L"Swap", L"MayuSkin", L"default").c_str(), L"ghost") == 0;
 
     const std::wstring bf = ini::String(file, L"Swap", L"Blindfold", L"default");
     if (_wcsicmp(bf.c_str(), L"show") == 0) g_blindfold = kBfShow;
@@ -1154,7 +1216,8 @@ MIXEDNUTS_PLUGIN_EXPORT int WINAPI MixedNutsPluginInit(const MixedNutsApi* api)
         kLookNamesA[g_sub], g_rope ? 1 : 0, kBlindfoldNames[g_blindfold]);
 
     // 見た目が元のままで、目隠しの設定も既定なら何もしない
-    if (!g_enabled || (g_main == kMio && g_sub == kMayu && g_blindfold == kBfDefault))
+    if (!g_enabled || (g_main == kMio && g_sub == kMayu && g_blindfold == kBfDefault &&
+                       !g_mioGhost && !g_mayuGhost))
     {
         Log("[OK] Nothing to do (disabled, or Main=mio / Sub=mayu with Blindfold=default)");
         return 1;
@@ -1162,9 +1225,9 @@ MIXEDNUTS_PLUGIN_EXPORT int WINAPI MixedNutsPluginInit(const MixedNutsApi* api)
 
     // tag には結果に影響する設定も入れる。変わればローダーが作り直す
     static char tag[128];
-    sprintf_s(tag, "%s main=%s sub=%s rope=%d blindfold=%s human=%d ghost=%d", kCacheTag,
+    sprintf_s(tag, "%s main=%s sub=%s rope=%d blindfold=%s human=%d ghost=%d mio=%d mayu=%d", kCacheTag,
               kLookNamesA[g_main], kLookNamesA[g_sub], g_rope ? 1 : 0, kBlindfoldNames[g_blindfold],
-              g_chitoseHuman ? 1 : 0, g_saeYaeGhost ? 1 : 0);
+              g_chitoseHuman ? 1 : 0, g_saeYaeGhost ? 1 : 0, g_mioGhost ? 1 : 0, g_mayuGhost ? 1 : 0);
     static const wchar_t* const targets[] = { kRdb, kRdx, nullptr };
     const MixedNutsPatch patch{ targets, tag, &GenerateSwap, nullptr };
     if (!api->RegisterPatch(api, &patch))

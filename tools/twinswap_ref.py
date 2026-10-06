@@ -297,8 +297,16 @@ ROPE_GROUPS = (0x768A168D, 0x6AD387AC)
 
 # ---- 組み立て ----------------------------------------------------------------
 
+# 澪・繭の肌を幽霊の色にする。顔が千歳・紗重と同じ形式・配置（BC1、2048 角）の衣装だけ
+# （澪の 4・6・7・8 着目、繭の 2・6・7 着目）。顔は千歳の顔から場所ごとに、体は千歳の手足から一律に移す
+TWIN_GHOST = {
+    'mio': ((0x2a44b780, 0xbc46a602, 0x85479d43, 0x4e489484), (0xd23346a0, 0x64353522, 0xf63723a4, 0x03db6c24)),
+    'mayu': ((0x9986bd04, 0xf5fe8080, 0x4d1c715f), (0xef6a11e4, 0x4be1d560, 0xa2ffc63f, 0x0b725887)),
+}
+
+
 def build(folder, rdb, rdx, main, sub, rope=True, blindfold='default', chitose_skin='default',
-          sae_yae_skin='default'):
+          sae_yae_skin='default', mio_skin='default', mayu_skin='default'):
     """(新しい rdb, 新しい rdx, fdata) を返す"""
     files = []
     for h in DBS:
@@ -357,6 +365,17 @@ def build(folder, rdb, rdx, main, sub, rope=True, blindfold='default', chitose_s
                 files.append((slot, skin_tone.recolor(read_entry(folder, rdb, rdx, own)[0],
                                                       read_entry(folder, rdb, rdx, other)[0]),
                               read_entry(folder, rdb, rdx, slot)[1]))
+
+    for twin, skin in (('mio', mio_skin), ('mayu', mayu_skin)):
+        if skin != 'ghost' or twin not in (main, sub):
+            continue
+        face, hand = (read_entry(folder, rdb, rdx, h)[0] for h in EXTRA['chitose']['skin'])
+        for h in TWIN_GHOST[twin][0]:
+            data, meta = read_entry(folder, rdb, rdx, h)
+            files.append((h, skin_tone.recolor(data, face), meta))
+        for h in TWIN_GHOST[twin][1]:
+            data, meta = read_entry(folder, rdb, rdx, h)
+            files.append((h, skin_tone.recolor(data, hand, uniform=True), meta))
 
     marker = max(rdx_files(rdx)) + 1
     assert FDATA_HASH not in rdx_files(rdx).values()

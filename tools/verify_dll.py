@@ -21,6 +21,8 @@ Rope=%d
 Blindfold=%s
 ChitoseSkin=%s
 SaeYaeSkin=%s
+MioSkin=%s
+MayuSkin=%s
 [General]
 Enabled=1
 Log=1
@@ -34,7 +36,9 @@ CASES = (('mayu', 'mio', 1, D), ('mio', 'mio', 1, D), ('mayu', 'mayu', 1, D),
          ('chitose', 'mio', 1, D), ('mayu', 'chitose', 1, D), ('chitose', 'chitose', 1, D),
          ('chitose', 'mayu', 1, D), ('sae', 'chitose', 0, D), ('chitose', 'yae', 1, 'hide'),
          ('chitose', 'chitose', 1, D, 'human', D), ('sae', 'yae', 1, D, D, 'ghost'),
-         ('chitose', 'sae', 0, D, 'human', 'ghost'), ('yae', 'mio', 1, D, 'human', 'ghost'))
+         ('chitose', 'sae', 0, D, 'human', 'ghost'), ('yae', 'mio', 1, D, 'human', 'ghost'),
+         ('mayu', 'mio', 1, D, D, D, 'ghost', 'ghost'), ('mio', 'mayu', 1, D, D, D, D, 'ghost'),
+         ('sae', 'mayu', 1, D, D, 'ghost', 'ghost', 'ghost'))
 
 
 def sha(b):
@@ -54,21 +58,21 @@ def main():
     rdx = open(os.path.join(pkg, 'root.rdx'), 'rb').read()
     ok_all = True
     for case in CASES:
-        main_, sub, rope, bf, cskin, sskin = case if len(case) == 6 else case + (D, D)
-        open(os.path.join(mod, 'twinswap.ini'), 'w').write(INI % (main_, sub, rope, bf, cskin, sskin))
+        main_, sub, rope, bf, cskin, sskin, mio, mayu = (case + (D,) * 4)[:8]
+        open(os.path.join(mod, 'twinswap.ini'), 'w').write(INI % (main_, sub, rope, bf, cskin, sskin, mio, mayu))
         shutil.rmtree(os.path.join(root, 'cache'), ignore_errors=True)
         for log in (os.path.join(mod, 'twinswap.log'), os.path.join(root, 'loader.log')):
             if os.path.exists(log):
                 os.remove(log)
         subprocess.run([os.path.join(game, 'harness.exe')], cwd=game, check=True, capture_output=True)
         want = dict(zip(('root.rdb', 'root.rdx', '0x%08x.fdata' % R.FDATA_HASH),
-                        R.build(pkg, rdb, rdx, main_, sub, bool(rope), bf, cskin, sskin)))
+                        R.build(pkg, rdb, rdx, main_, sub, bool(rope), bf, cskin, sskin, mio, mayu)))
         for name, b in want.items():
             p = os.path.join(root, 'cache', 'fdata_package', name)
             got = open(p, 'rb').read() if os.path.exists(p) else b''
             same = got == b
             ok_all &= same
-            print('%-7s %-7s rope=%d %-7s %-7s %-7s %-18s %s  plugin=%s ref=%s' % (main_, sub, rope, bf, cskin, sskin, name, 'OK ' if same else 'NG ', sha(got), sha(b)))
+            print('%-7s %-7s rope=%d %-7s %-7s %-7s %-7s %-7s %-18s %s  plugin=%s ref=%s' % (main_, sub, rope, bf, cskin, sskin, mio, mayu, name, 'OK ' if same else 'NG ', sha(got), sha(b)))
         log = open(os.path.join(mod, 'twinswap.log'), encoding='utf-8-sig').read()
         if '[NG]' in log:
             ok_all = False
