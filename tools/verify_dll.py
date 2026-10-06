@@ -23,6 +23,8 @@ ChitoseSkin=%s
 SaeYaeSkin=%s
 MioSkin=%s
 MayuSkin=%s
+SaeYaeNeckMark=%d
+SaeYaeKimono=%s
 [General]
 Enabled=1
 Log=1
@@ -39,7 +41,9 @@ CASES = (('mayu', 'mio', 1, D), ('mio', 'mio', 1, D), ('mayu', 'mayu', 1, D),
          ('chitose', 'sae', 0, D, 'human', 'ghost'), ('yae', 'mio', 1, D, 'human', 'ghost'),
          ('mayu', 'mio', 1, D, D, D, 'ghost', 'ghost'), ('mio', 'mayu', 1, D, D, D, D, 'ghost'),
          ('sae', 'mayu', 1, D, D, 'ghost', 'ghost', 'ghost'),
-         ('miyako', 'mio', 1, D), ('mayu', 'miyako', 1, D), ('miyako', 'chitose', 1, D, 'human', 'ghost'))
+         ('miyako', 'mio', 1, D), ('mayu', 'miyako', 1, D), ('miyako', 'chitose', 1, D, 'human', 'ghost'),
+         ('sae', 'yae', 1, D, D, 'blue', D, D, 0, 'bloody'), ('sae', 'mio', 0, D, D, 'ghost', D, D, 1, 'bloody'),
+         ('yae', 'sae', 1, D, D, D, D, D, 0, 'bloody'), ('mayu', 'yae', 1, D, D, 'blue', D, 'ghost', 1, D))
 
 
 def sha(b):
@@ -60,14 +64,16 @@ def main():
     ok_all = True
     for case in CASES:
         main_, sub, rope, bf, cskin, sskin, mio, mayu = (case + (D,) * 4)[:8]
-        open(os.path.join(mod, 'twinswap.ini'), 'w').write(INI % (main_, sub, rope, bf, cskin, sskin, mio, mayu))
+        mark, kimono = (case[8], case[9]) if len(case) > 8 else (0, D)
+        open(os.path.join(mod, 'twinswap.ini'), 'w').write(
+            INI % (main_, sub, rope, bf, cskin, sskin, mio, mayu, mark, kimono))
         shutil.rmtree(os.path.join(root, 'cache'), ignore_errors=True)
         for log in (os.path.join(mod, 'twinswap.log'), os.path.join(root, 'loader.log')):
             if os.path.exists(log):
                 os.remove(log)
         subprocess.run([os.path.join(game, 'harness.exe')], cwd=game, check=True, capture_output=True)
         want = dict(zip(('root.rdb', 'root.rdx', '0x%08x.fdata' % R.FDATA_HASH),
-                        R.build(pkg, rdb, rdx, main_, sub, bool(rope), bf, cskin, sskin, mio, mayu)))
+                        R.build(pkg, rdb, rdx, main_, sub, bool(rope), bf, cskin, sskin, mio, mayu, bool(mark), kimono)))
         for name, b in want.items():
             p = os.path.join(root, 'cache', 'fdata_package', name)
             got = open(p, 'rb').read() if os.path.exists(p) else b''

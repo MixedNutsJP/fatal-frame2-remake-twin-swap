@@ -52,7 +52,7 @@ using mixednuts::Wr;
 using mixednuts::file::ReadAt;
 
 constexpr char     kVersion[]  = "2.4.0";
-constexpr char     kCacheTag[] = "twinswap-v25";   // 生成ロジックを変えたら上げる
+constexpr char     kCacheTag[] = "twinswap-v28";   // 生成ロジックを変えたら上げる
 constexpr uint32_t kFdataHash  = 0xFFFE7510;
 
 const wchar_t kRdb[] = L"fdata_package\\root.rdb";
@@ -68,7 +68,12 @@ Look g_main = kMayu;   // 操作キャラ（本編の澪）の見た目
 Look g_sub  = kMio;    // 同行キャラ（本編の繭）の見た目
 bool g_rope = true;    // 紗重・八重の赤い縄を表示するか
 bool g_chitoseHuman = false;   // 千歳の肌を人間の色にするか
-bool g_saeYaeGhost  = false;   // 紗重・八重の肌を幽霊の色にするか
+// 紗重・八重の肌: ゲームのまま / 幽霊の白い肌 / 幽霊の青白い肌（首に赤い痕がある）
+enum SaeYaeSkin { kSkinDefault, kSkinGhost, kSkinBlue };
+const char* const kSaeYaeSkinNames[] = {"default", "ghost", "blue"};
+SaeYaeSkin g_saeYaeSkin = kSkinDefault;
+bool g_neckMark     = false;   // 幽霊の白い肌のとき、首に絞められた痕を付けるか
+bool g_bloodyKimono = false;   // 紗重・八重の着物を、血の付いたものにするか
 bool g_mioGhost     = false;   // 澪の肌を幽霊の色にするか
 bool g_mayuGhost    = false;   // 繭の肌を幽霊の色にするか
 
@@ -196,11 +201,22 @@ const uint32_t kMioGhostBodies[]  = {0xD23346A0, 0x64353522, 0xF63723A4, 0x03DB6
 const uint32_t kMayuGhostFaces[]  = {0x9986BD04, 0xF5FE8080, 0x4D1C715F};
 const uint32_t kMayuGhostBodies[] = {0xEF6A11E4, 0x4BE1D560, 0xA2FFC63F, 0x0B725887};
 
-// 肌の色を変えるか。千歳は人間の肌色に、紗重・八重は幽霊の肌色にできる
-bool SkinChanged(Look look)
-{
-    return look == kChitose ? g_chitoseHuman : (look == kSae || look == kYae) && g_saeYaeGhost;
-}
+// 紗重・八重の幽霊の姿は、ゲームに入っている幽霊の紗重のモデル 3 体のテクスチャをそのまま借りる。
+// どれも紗重・八重と同じ配置で、顔・手足・着物が 1 対 1 に対応する。紗重・八重の写しの ktid で、
+// 番号（顔 94、手足 119、小さな 1 枚 105、着物 128、着物の布 0 と 135）ごとにオブジェクトを付け替える。
+// 色の加工はしない。骨格とメッシュは紗重・八重のまま。
+// 幽霊のモデルそのものを見た目にする方法も試したが、3 体のうち 2 体は骨の並びが紗重と違い、首が
+// 伸びて着物がねじれた。並びを紗重に合わせて直すと、今度はゲームが落ちた（不採用）
+//   blue : 青白い肌、首に赤い痕、血の付いた着物（定義 0x3EE8B636。足元が消える幽霊）
+//   mark : 白い肌、首に暗い痕、血の付いた着物（定義 0xC718F615）
+//   plain: 白い肌、痕なし、血の付いていない着物（定義 0xCF399B0F）
+struct GhostTextures { uint32_t face, hands, detail, kimono, cloth0, cloth135; };
+const GhostTextures kGhostBlue  = {0xCD4ACF5B, 0x7A34DE7B, 0x2997A211, 0xDC810C81, 0x36C902C8, 0x849FFC24};
+const GhostTextures kGhostMark  = {0x0794737B, 0xB47E829B, 0x63E14631, 0x16CAB0A1, 0x7112A6E8, 0xBEE9A044};
+const GhostTextures kGhostPlain = {0xE9BC216F, 0x96A6308F, 0x4608F425, 0xF8F25E95, 0x533A54DC, 0xA1114E38};
+
+// 肌のテクスチャの色を作り直すか。千歳を人間の肌色にするときだけ（紗重の色味を移す）
+bool SkinChanged(Look look) { return look == kChitose && g_chitoseHuman; }
 
 // 写しを使う見た目か
 bool UsesCopy(Look look) { return look == kSae || look == kYae || look == kChitose || look == kMiyako; }
@@ -899,6 +915,15 @@ bool ReplaceObject(std::vector<uint8_t>& ktid, uint32_t from, uint32_t to)
     return found == 1;
 }
 
+// ktid（8 バイトの並び: 番号, オブジェクト）の中で、番号 slot のオブジェクトを obj にする
+bool ReplaceSlot(std::vector<uint8_t>& ktid, uint32_t slot, uint32_t obj)
+{
+    int found = 0;
+    for (size_t i = 0; i + 8 <= ktid.size(); i += 8)
+        if (Rd<uint32_t>(&ktid[i]) == slot) { Wr<uint32_t>(&ktid[i + 4], obj); ++found; }
+    return found == 1;
+}
+
 // ---- 生成 ---------------------------------------------------------------
 
 // 現在の内容を丸ごと読む（先に読み込まれた Mod の改変を含む）
@@ -1006,6 +1031,28 @@ bool Generate()
             }
             else if (!HideGroups(copy[0], copy[1], kRopeGroups, sizeof(kRopeGroups) / sizeof(kRopeGroups[0])))
                 Log("[NG] Could not hide the rope of %s; it may appear in cutscenes", kLookNamesA[look]);
+            if (look == kSae || look == kYae)
+            {
+                // 幽霊の姿: 肌と着物のテクスチャを、幽霊の紗重のモデルのものに付け替える
+                const GhostTextures* skinSet =
+                    g_saeYaeSkin == kSkinBlue ? &kGhostBlue
+                    : g_saeYaeSkin == kSkinGhost ? (g_neckMark ? &kGhostMark : &kGhostPlain) : nullptr;
+                const GhostTextures* kimonoSet =
+                    g_bloodyKimono ? (g_saeYaeSkin == kSkinBlue ? &kGhostBlue : &kGhostMark)
+                    : g_saeYaeSkin == kSkinGhost ? &kGhostPlain : nullptr;
+                bool ok = true;
+                if (skinSet)
+                    ok = ReplaceSlot(copy[4].data, 94, skinSet->face) && ReplaceSlot(copy[4].data, 119, skinSet->hands) &&
+                         ReplaceSlot(copy[4].data, 105, skinSet->detail);
+                if (ok && kimonoSet)
+                    ok = ReplaceSlot(copy[4].data, 128, kimonoSet->kimono) && ReplaceSlot(copy[4].data, 0, kimonoSet->cloth0) &&
+                         ReplaceSlot(copy[4].data, 135, kimonoSet->cloth135);
+                if (!ok)
+                {
+                    Log("[NG] ktid 0x%08X: the textures to replace are not found", from.ktid);
+                    return false;
+                }
+            }
             if (skin && (!ReplaceObject(copy[4].data, ex.faceObj[k], home.slotObj[0]) ||
                          !ReplaceObject(copy[4].data, ex.handObj[k], home.slotObj[1])))
             {
@@ -1036,9 +1083,9 @@ bool Generate()
                 files.push_back(std::move(homeDb));
             }
         }
-        if (skin)   // 千歳は紗重の、紗重・八重は千歳の色味を移す
+        if (skin)   // 千歳に紗重の色味を移す
         {
-            const Extra& tone = look == kChitose ? kSaeExtra : kChitoseExtra;
+            const Extra& tone = kSaeExtra;
             const uint32_t pairs[2][2] = {{ex.faceG1t, tone.faceG1t}, {ex.handG1t, tone.handG1t}};
             for (int n = 0; n < 2; ++n)
             {
@@ -1205,9 +1252,12 @@ void LoadConfig()
     else if (_wcsicmp(cs.c_str(), L"default") != 0)
         Log("[NG] [Swap] ChitoseSkin=%s is not default or human; using default", Utf8(cs).c_str());
     const std::wstring ss = ini::String(file, L"Swap", L"SaeYaeSkin", L"default");
-    if (_wcsicmp(ss.c_str(), L"ghost") == 0) g_saeYaeGhost = true;
+    if (_wcsicmp(ss.c_str(), L"ghost") == 0) g_saeYaeSkin = kSkinGhost;
+    else if (_wcsicmp(ss.c_str(), L"blue") == 0) g_saeYaeSkin = kSkinBlue;
     else if (_wcsicmp(ss.c_str(), L"default") != 0)
-        Log("[NG] [Swap] SaeYaeSkin=%s is not default or ghost; using default", Utf8(ss).c_str());
+        Log("[NG] [Swap] SaeYaeSkin=%s is not default, ghost or blue; using default", Utf8(ss).c_str());
+    g_neckMark = ini::Bool(file, L"Swap", L"SaeYaeNeckMark", false);
+    g_bloodyKimono = _wcsicmp(ini::String(file, L"Swap", L"SaeYaeKimono", L"default").c_str(), L"bloody") == 0;
     g_mioGhost = _wcsicmp(ini::String(file, L"Swap", L"MioSkin", L"default").c_str(), L"ghost") == 0;
     g_mayuGhost = _wcsicmp(ini::String(file, L"Swap", L"MayuSkin", L"default").c_str(), L"ghost") == 0;
 
@@ -1242,9 +1292,10 @@ MIXEDNUTS_PLUGIN_EXPORT int WINAPI MixedNutsPluginInit(const MixedNutsApi* api)
 
     // tag には結果に影響する設定も入れる。変わればローダーが作り直す
     static char tag[128];
-    sprintf_s(tag, "%s main=%s sub=%s rope=%d blindfold=%s human=%d ghost=%d mio=%d mayu=%d", kCacheTag,
-              kLookNamesA[g_main], kLookNamesA[g_sub], g_rope ? 1 : 0, kBlindfoldNames[g_blindfold],
-              g_chitoseHuman ? 1 : 0, g_saeYaeGhost ? 1 : 0, g_mioGhost ? 1 : 0, g_mayuGhost ? 1 : 0);
+    sprintf_s(tag, "%s main=%s sub=%s rope=%d blindfold=%s human=%d sae=%s mark=%d kimono=%d mio=%d mayu=%d",
+              kCacheTag, kLookNamesA[g_main], kLookNamesA[g_sub], g_rope ? 1 : 0, kBlindfoldNames[g_blindfold],
+              g_chitoseHuman ? 1 : 0, kSaeYaeSkinNames[g_saeYaeSkin], g_neckMark ? 1 : 0,
+              g_bloodyKimono ? 1 : 0, g_mioGhost ? 1 : 0, g_mayuGhost ? 1 : 0);
     static const wchar_t* const targets[] = { kRdb, kRdx, nullptr };
     const MixedNutsPatch patch{ targets, tag, &GenerateSwap, nullptr };
     if (!api->RegisterPatch(api, &patch))

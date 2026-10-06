@@ -184,6 +184,26 @@ def fit_chitose(g1m, drop=None, helper=68, spare=75, helper_id=107, spare_id=114
     return bytes(g1m)
 
 
+# 紗重・八重の幽霊の姿: ゲームに入っている幽霊の紗重のモデル 3 体のテクスチャを借りる。
+# 紗重・八重の写しの ktid で、番号ごとにオブジェクトを付け替える。並びは (顔 94, 手足 119, 小さな 1 枚 105,
+# 着物 128, 着物の布 0, 着物の布 135)。blue = 青白い肌・首に赤い痕・血の付いた着物、
+# mark = 白い肌・首に暗い痕・血の付いた着物、plain = 白い肌・痕なし・血の付いていない着物
+GHOST_SLOTS = (94, 119, 105, 128, 0, 135)
+GHOST_TEXTURES = {
+    'blue': (0xcd4acf5b, 0x7a34de7b, 0x2997a211, 0xdc810c81, 0x36c902c8, 0x849ffc24),
+    'mark': (0x0794737b, 0xb47e829b, 0x63e14631, 0x16cab0a1, 0x7112a6e8, 0xbee9a044),
+    'plain': (0xe9bc216f, 0x96a6308f, 0x4608f425, 0xf8f25e95, 0x533a54dc, 0xa1114e38),
+}
+
+
+def replace_slot(ktid, slot, obj):
+    ktid = bytearray(ktid)
+    at = [i for i in range(0, len(ktid) - 7, 8) if struct.unpack_from('<I', ktid, i)[0] == slot]
+    assert len(at) == 1, 'texture slot %d not found' % slot
+    struct.pack_into('<I', ktid, at[0] + 4, obj)
+    return bytes(ktid)
+
+
 def def_for(look, i, k, main, sub):
     if look in EXTRA:
         return home_for(look, main, sub)['defs'][k]
@@ -311,7 +331,8 @@ TWIN_GHOST = {
 
 
 def build(folder, rdb, rdx, main, sub, rope=True, blindfold='default', chitose_skin='default',
-          sae_yae_skin='default', mio_skin='default', mayu_skin='default'):
+          sae_yae_skin='default', mio_skin='default', mayu_skin='default', neck_mark=False,
+          kimono='default'):
     """(新しい rdb, 新しい rdx, fdata) を返す"""
     files = []
     for h in DBS:
@@ -341,8 +362,7 @@ def build(folder, rdb, rdx, main, sub, rope=True, blindfold='default', chitose_s
         # モデルの写しを、使っていない双子の初期衣装に置く。
         # 中身は写し元、エントリの付属データは置き場所のものを使う
         ex, home = EXTRA[look], home_for(look, main, sub)
-        skin = (chitose_skin == 'human' if look == 'chitose' else
-                look in ('sae', 'yae') and sae_yae_skin == 'ghost')
+        skin = look == 'chitose' and chitose_skin == 'human'
         for k in range(2):
             data = [read_entry(folder, rdb, rdx, h)[0] for h in ex['files'][k]]
             if look == 'chitose':
@@ -354,6 +374,14 @@ def build(folder, rdb, rdx, main, sub, rope=True, blindfold='default', chitose_s
                 data[0], data[1] = merge_groups(data[0], data[1], ROPE_GROUPS)
             else:        # 縄の部品を描画されないようにする（カットシーンでも出ないように）
                 data[0] = hide_groups(data[0], data[1], ROPE_GROUPS)
+            if look in ('sae', 'yae'):   # 幽霊の姿: 肌と着物のテクスチャを付け替える
+                skin_set = {'blue': 'blue', 'ghost': 'mark' if neck_mark else 'plain'}.get(sae_yae_skin)
+                kimono_set = (('blue' if sae_yae_skin == 'blue' else 'mark') if kimono == 'bloody'
+                              else 'plain' if sae_yae_skin == 'ghost' else None)
+                for name, part in ((skin_set, slice(0, 3)), (kimono_set, slice(3, 6))):
+                    if name:
+                        for slot, obj in zip(GHOST_SLOTS[part], GHOST_TEXTURES[name][part]):
+                            data[4] = replace_slot(data[4], slot, obj)
             if skin:
                 for obj, (slot_obj, _) in zip(ex['objs'][k], home['slots']):
                     data[4] = replace_object(data[4], obj, slot_obj)
@@ -368,8 +396,8 @@ def build(folder, rdb, rdx, main, sub, rope=True, blindfold='default', chitose_s
                 db[0x14:0x18] = home_db[0x14:0x18]
                 struct.pack_into('<I', db, 0x28, home['dbs'][k])
                 files.append((home['dbs'][k], bytes(db), meta))
-        if skin:   # 千歳は紗重の、紗重・八重は千歳の色味を移す
-            tone = EXTRA['sae' if look == 'chitose' else 'chitose']['skin']
+        if skin:   # 千歳に紗重の色味を移す
+            tone = EXTRA['sae']['skin']
             for own, other, (_, slot) in zip(ex['skin'], tone, home['slots']):
                 files.append((slot, skin_tone.recolor(read_entry(folder, rdb, rdx, own)[0],
                                                       read_entry(folder, rdb, rdx, other)[0]),
