@@ -120,6 +120,10 @@ EXTRA = {
                 objs=[(0xaf727d4f, 0x5c5c8c6f)] * 2, skin=(0x742128bd, 0x1c0fb7dd), db=0xea30890c),
     'yae': dict(files=[(0xe92e0aff, 0xf01d9c7d, 0xe969233d, 0xdb284478, 0x8a1de35c)] * 2,
                 objs=[(0x82465651, 0x2f306571)] * 2, skin=(0x60b77d78, 0x08a60c98), db=0xf46e1125),
+    # 須藤美也子（定義 0xa0d12c42）。背が高い（腰 93.0）ので、体を持ち上げる。垂れた髪のグループを常時表示に
+    'miyako': dict(files=[(0xaef9d214, 0xb5e96392, 0xaf34ea52, 0xa0f40b8d, 0x7dcafee7)] * 2, db=0x86e670fe,
+                 drop=struct.unpack('<f', struct.pack('<f', struct.unpack('<f', struct.pack('<f', 87.25))[0] - 93.0))[0],
+                 groups=(0x0d609214,)),
     'chitose': dict(files=[(0x91c71644, 0x98b6a7c2, 0x92022e82, 0x83c14fbd, 0xf4a640b7),
                            (0x171b23ba, 0x1e0ab538, 0x17563bf8, 0x09155d33, 0x19d3e201)],
                     objs=[(0xd90f8a1f, 0x8708793f), (0xddaf9a77, 0x396ad757)],
@@ -145,10 +149,11 @@ def home_for(look, main, sub):
     return HOMES[free[0 if look == main or main not in EXTRA else 1]]
 
 
-def fit_chitose(g1m, helper=68, spare=75, helper_id=107, spare_id=114):
+def fit_chitose(g1m, drop=None, helper=68, spare=75, helper_id=107, spare_id=114):
     """千歳のモデルの骨格（G1MS）を、双子のモーションで足が浮かないように書き換える。
     腰（1 番）の初期位置を上げ、体は 2 番の子（X が上向き）を下げる。腰の直下の補助の骨は、
     68 番を下げ役にする（75 番に 68 番の値を写して ID の表で入れ替え、69 番以降の腰の子を 68 番の子に）"""
+    drop = CHITOSE_DROP if drop is None else drop
     g1m = bytearray(g1m)
     o = struct.unpack_from('<I', g1m, 0xC)[0]
     while g1m[o:o + 4][::-1] != b'G1MS':
@@ -168,12 +173,12 @@ def fit_chitose(g1m, helper=68, spare=75, helper_id=107, spare_id=114):
     struct.pack_into('<H', g1m, table + 2 * helper_id, spare)
     struct.pack_into('<H', g1m, table + 2 * spare_id, helper)
     y = struct.unpack_from('<f', g1m, joints + 48 + 36)[0]
-    struct.pack_into('<f', g1m, joints + 48 + 36, y + CHITOSE_DROP)
-    struct.pack_into('<3f', g1m, joints + 48 * helper + 32, 0, -CHITOSE_DROP, 0)
+    struct.pack_into('<f', g1m, joints + 48 + 36, y + drop)
+    struct.pack_into('<3f', g1m, joints + 48 * helper + 32, 0, -drop, 0)
     for j in range(3, jc):
         if parent(j) == 2:
             x = struct.unpack_from('<f', g1m, joints + 48 * j + 32)[0]
-            struct.pack_into('<f', g1m, joints + 48 * j + 32, x - CHITOSE_DROP)
+            struct.pack_into('<f', g1m, joints + 48 * j + 32, x - drop)
         elif parent(j) == 1 and j > helper:
             struct.pack_into('<i', g1m, joints + 48 * j + 12, helper)
     return bytes(g1m)
@@ -330,17 +335,21 @@ def build(folder, rdb, rdx, main, sub, rope=True, blindfold='default', chitose_s
         files.append((g1m_h, g1m, g1m_meta))
         if names:
             files.append((grp_h, grp, grp_meta))
-    for look in ('sae', 'yae', 'chitose'):
+    for look in ('sae', 'yae', 'chitose', 'miyako'):
         if look not in (main, sub):
             continue
         # モデルの写しを、使っていない双子の初期衣装に置く。
         # 中身は写し元、エントリの付属データは置き場所のものを使う
         ex, home = EXTRA[look], home_for(look, main, sub)
-        skin = chitose_skin == 'human' if look == 'chitose' else sae_yae_skin == 'ghost'
+        skin = (chitose_skin == 'human' if look == 'chitose' else
+                look in ('sae', 'yae') and sae_yae_skin == 'ghost')
         for k in range(2):
             data = [read_entry(folder, rdb, rdx, h)[0] for h in ex['files'][k]]
             if look == 'chitose':
                 data[0] = fit_chitose(data[0])
+            elif look == 'miyako':
+                data[0] = fit_chitose(data[0], ex['drop'])
+                data[0], data[1] = merge_groups(data[0], data[1], ex['groups'])
             elif rope:   # 縄のグループを常時表示にする（双子のキャラはこの 2 つを表示しない）
                 data[0], data[1] = merge_groups(data[0], data[1], ROPE_GROUPS)
             else:        # 縄の部品を描画されないようにする（カットシーンでも出ないように）

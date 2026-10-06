@@ -52,16 +52,16 @@ using mixednuts::Wr;
 using mixednuts::file::ReadAt;
 
 constexpr char     kVersion[]  = "2.4.0";
-constexpr char     kCacheTag[] = "twinswap-v24";   // 生成ロジックを変えたら上げる
+constexpr char     kCacheTag[] = "twinswap-v25";   // 生成ロジックを変えたら上げる
 constexpr uint32_t kFdataHash  = 0xFFFE7510;
 
 const wchar_t kRdb[] = L"fdata_package\\root.rdb";
 const wchar_t kRdx[] = L"fdata_package\\root.rdx";
 
 // 見た目の選択肢。ini の値もこの名前
-enum Look { kMio, kMayu, kSae, kYae, kChitose };
-const wchar_t* const kLookNames[] = {L"mio", L"mayu", L"sae", L"yae", L"chitose"};
-const char* const    kLookNamesA[] = {"mio", "mayu", "sae", "yae", "chitose"};
+enum Look { kMio, kMayu, kSae, kYae, kChitose, kMiyako };
+const wchar_t* const kLookNames[] = {L"mio", L"mayu", L"sae", L"yae", L"chitose", L"miyako"};
+const char* const    kLookNamesA[] = {"mio", "mayu", "sae", "yae", "chitose", "miyako"};
 
 bool g_enabled = true;
 Look g_main = kMayu;   // 操作キャラ（本編の澪）の見た目
@@ -116,6 +116,8 @@ const uint32_t kMayuDefs[7][2] = {
 // 千歳は背が低く、腰の骨の高さが 74.16（双子は 87.25）。双子のモーションは腰を 87.25 に置くので、
 // そのままでは体が 13.09 持ち上がって足が浮く。骨格を書き換えて合わせる（FitChitose）
 constexpr float kChitoseDrop = 87.25f - 74.16f;
+// 美也子は逆に背が高く、腰の高さが 93.0。体を持ち上げる（下げる量が負）
+constexpr float kMiyakoDrop = 87.25f - 93.0f;
 
 // 紗重・八重・千歳は、モデルの写しを別のファイルに置いて使う。本来の紗重・八重・千歳（別の枠
 // から同じモデルを使う）に影響させないため。置き場所は、見た目として使われていない双子の
@@ -148,6 +150,15 @@ const Extra kYaeExtra = {
     {{0xE92E0AFF, 0xF01D9C7D, 0xE969233D, 0xDB284478, 0x8A1DE35C, 0xF46E1125},
      {0xE92E0AFF, 0xF01D9C7D, 0xE969233D, 0xDB284478, 0x8A1DE35C, 0xF46E1125}},
     {0x82465651, 0x82465651}, {0x2F306571, 0x2F306571}, 0x60B77D78, 0x08A60C98};
+// 須藤美也子（定義 0xA0D12C42。ブラウスとスカート、首に痕のある霊の姿）。1 体だけ。
+// 肌の色の変更は無いので、テクスチャの欄は 0
+const Extra kMiyakoExtra = {
+    {{0xAEF9D214, 0xB5E96392, 0xAF34EA52, 0xA0F40B8D, 0x7DCAFEE7, 0x86E670FE},
+     {0xAEF9D214, 0xB5E96392, 0xAF34EA52, 0xA0F40B8D, 0x7DCAFEE7, 0x86E670FE}},
+    {}, {}, 0, 0};
+// 垂れた髪（0d609214）のグループ。双子のキャラは表示しないので、グループ 0 へ移す。
+// 目まわりの差分（1886e49e、2 番目のグループ）は、双子の 7f621c22 と同じ位置・同じ種類なので触らない
+const uint32_t kMiyakoGroups[] = {0x0D609214};
 const Extra kChitoseExtra = {
     {{0x91C71644, 0x98B6A7C2, 0x92022E82, 0x83C14FBD, 0xF4A640B7, 0},
      {0x171B23BA, 0x1E0AB538, 0x17563BF8, 0x09155D33, 0x19D3E201, 0}},
@@ -173,7 +184,7 @@ const Home kMioHome = {
 
 const Extra& ExtraOf(Look look)
 {
-    return look == kSae ? kSaeExtra : look == kYae ? kYaeExtra : kChitoseExtra;
+    return look == kSae ? kSaeExtra : look == kYae ? kYaeExtra : look == kMiyako ? kMiyakoExtra : kChitoseExtra;
 }
 
 // 澪・繭の肌を幽霊の色にする。顔のテクスチャが千歳・紗重と同じ形式・配置（BC1、2048 角）の
@@ -186,10 +197,13 @@ const uint32_t kMayuGhostFaces[]  = {0x9986BD04, 0xF5FE8080, 0x4D1C715F};
 const uint32_t kMayuGhostBodies[] = {0xEF6A11E4, 0x4BE1D560, 0xA2FFC63F, 0x0B725887};
 
 // 肌の色を変えるか。千歳は人間の肌色に、紗重・八重は幽霊の肌色にできる
-bool SkinChanged(Look look) { return look == kChitose ? g_chitoseHuman : g_saeYaeGhost; }
+bool SkinChanged(Look look)
+{
+    return look == kChitose ? g_chitoseHuman : (look == kSae || look == kYae) && g_saeYaeGhost;
+}
 
 // 写しを使う見た目か
-bool UsesCopy(Look look) { return look == kSae || look == kYae || look == kChitose; }
+bool UsesCopy(Look look) { return look == kSae || look == kYae || look == kChitose || look == kMiyako; }
 
 // 写しの置き場所。空いている双子を繭、澪の順に、Main、Sub の順で割り当てる。
 // 写しを使う見た目が 2 種類なら双子は 2 人とも空いていて、1 種類なら少なくとも 1 人は空いている
@@ -565,7 +579,7 @@ bool HideGroups(File& g1m, const File& grp, const uint32_t* names, size_t count)
 // こうすると、2 番と 68 番以外の骨の初期の位置（スキニングと布の基準）は変わらない。
 // 体だけ下げると、手をつなぐときに袖が伸びて体が浮いた（手の目標の骨が取り残される）。
 // 親の番号が子より大きくなる付け替えは、布（裾と垂れた髪）が消えた。骨を足すのは起動時に止まった
-bool FitChitose(File& g1m)
+bool FitSkeleton(File& g1m, float drop)
 {
     constexpr uint16_t kHelper = 68, kSpare = 75, kHelperId = 107, kSpareId = 114;
     auto& d = g1m.data;
@@ -597,14 +611,14 @@ bool FitChitose(File& g1m)
     memcpy(joints + 48 * kSpare, joints + 48 * kHelper, 48);
     Wr<uint16_t>(table + 2 * kHelperId, kSpare);
     Wr<uint16_t>(table + 2 * kSpareId, kHelper);
-    Wr<float>(joints + 48 + 36, Rd<float>(joints + 48 + 36) + kChitoseDrop);
+    Wr<float>(joints + 48 + 36, Rd<float>(joints + 48 + 36) + drop);
     Wr<float>(joints + 48 * kHelper + 32, 0.0f);
-    Wr<float>(joints + 48 * kHelper + 36, -kChitoseDrop);
+    Wr<float>(joints + 48 * kHelper + 36, -drop);
     Wr<float>(joints + 48 * kHelper + 40, 0.0f);
     for (uint16_t j = 3; j < jc; ++j)
     {
         uint8_t* joint = joints + 48 * j;
-        if (parent(j) == 2) Wr<float>(joint + 32, Rd<float>(joint + 32) - kChitoseDrop);
+        if (parent(j) == 2) Wr<float>(joint + 32, Rd<float>(joint + 32) - drop);
         else if (parent(j) == 1 && j > kHelper) Wr<int32_t>(joint + 12, kHelper);
     }
     return true;
@@ -952,7 +966,7 @@ bool Generate()
         ++fixed;
     }
     // 紗重・八重・千歳
-    for (Look look : {kSae, kYae, kChitose})
+    for (Look look : {kSae, kYae, kChitose, kMiyako})
     {
         if (g_main != look && g_sub != look) continue;
         // モデルの写しを、使っていない双子の初期衣装に置く。
@@ -971,13 +985,16 @@ bool Generate()
             for (int n = 0; n < 5; ++n)
                 if (!ReadEntry(src, pairs[n][0], copy[n]) || !ReadEntry(src, pairs[n][1], dest[n]))
                     return false;
-            if (look == kChitose)
+            if (look == kChitose || look == kMiyako)
             {
-                if (!FitChitose(copy[0]))
+                if (!FitSkeleton(copy[0], look == kChitose ? kChitoseDrop : kMiyakoDrop))
                 {
-                    Log("[NG] g1m 0x%08X: could not fit Chitose's skeleton", from.g1m);
+                    Log("[NG] g1m 0x%08X: could not fit the skeleton", from.g1m);
                     return false;
                 }
+                if (look == kMiyako && !MergeGroups(copy[0], copy[1], kMiyakoGroups,
+                                                  sizeof(kMiyakoGroups) / sizeof(kMiyakoGroups[0])))
+                    Log("[NG] Could not show the hair of %s", kLookNamesA[look]);
             }
             // 縄: 表示するなら、縄のグループを常時表示のグループ 0 へ移す（双子のキャラはこの 2 つを
             // 表示しない）。表示しないなら、縄の部品を描画されないようにする（移さないだけだと、
@@ -1166,7 +1183,7 @@ int GenerateSwap(void*, const MixedNutsPatchIo* io, char* note, size_t cap)
 Look ReadLook(const std::wstring& ini, const wchar_t* key, Look def, Look own)
 {
     const std::wstring s = mixednuts::ini::String(ini, L"Swap", key, kLookNames[def]);
-    for (int i = kMio; i <= kChitose; ++i)
+    for (int i = kMio; i <= kMiyako; ++i)
         if (_wcsicmp(s.c_str(), kLookNames[i]) == 0) return static_cast<Look>(i);
     Log("[NG] [Swap] %s=%s is not mio, mayu, sae, yae or chitose; keeping the original look (%s)",
         Utf8(key).c_str(), Utf8(s).c_str(), kLookNamesA[own]);

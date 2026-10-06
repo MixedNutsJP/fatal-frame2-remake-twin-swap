@@ -38,7 +38,8 @@ CASES = (('mayu', 'mio', 1, D), ('mio', 'mio', 1, D), ('mayu', 'mayu', 1, D),
          ('chitose', 'chitose', 1, D, 'human', D), ('sae', 'yae', 1, D, D, 'ghost'),
          ('chitose', 'sae', 0, D, 'human', 'ghost'), ('yae', 'mio', 1, D, 'human', 'ghost'),
          ('mayu', 'mio', 1, D, D, D, 'ghost', 'ghost'), ('mio', 'mayu', 1, D, D, D, D, 'ghost'),
-         ('sae', 'mayu', 1, D, D, 'ghost', 'ghost', 'ghost'))
+         ('sae', 'mayu', 1, D, D, 'ghost', 'ghost', 'ghost'),
+         ('miyako', 'mio', 1, D), ('mayu', 'miyako', 1, D), ('miyako', 'chitose', 1, D, 'human', 'ghost'))
 
 
 def sha(b):
