@@ -192,12 +192,13 @@ Costumes are paired one-to-one in costume menu order (Mio's nth ↔ Mayu's nth).
   Miyako who appears in the story is not affected.
 - **樹月・睦月は着物の 1 着ずつだけです**（2.6.0）。どの衣装を選んでもその姿になります
   （澪の 8 着目を除く）。二人とも双子より背が高いので、美也子と同じく骨格を調整しています。
-  `itsuki` / `mutsuki` で、歩く・手をつなぐ、を確認しています。本編に登場する樹月・睦月には
-  影響しません。
+  `itsuki` / `mutsuki` で、歩く・手をつなぐ、を確認しています。手をつなぐ瞬間に、顎の表示が
+  崩れます。本編に登場する樹月・睦月には影響しません。
   **Itsuki and Mutsuki have a single outfit each (their kimono)** (2.6.0), shown whichever
   costume is selected (except Mio's 8th). Both are taller than the twins, so their skeletons
   are adjusted as Miyako's is. Walking and holding hands were checked with `itsuki` /
-  `mutsuki`. The Itsuki and Mutsuki who appear in the story are not affected.
+  `mutsuki`. At the moment the two take hands, the jaw is drawn broken. The Itsuki and
+  Mutsuki who appear in the story are not affected.
 - **肌の色を選べます。** 変わるのは肌（と、紗重・八重では着物）のテクスチャだけで、モデルの形は
   変わりません。本編に登場する千歳・紗重・八重には影響しません。
   - **千歳**: `ChitoseSkin=human` で、生きている人の肌色になります（2.4.0）。紗重の肌の色味を移して

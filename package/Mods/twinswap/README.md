@@ -198,7 +198,8 @@ GitHub の Issue で教えてください。
 
 美也子は、`Main=miyako` / `Sub=mayu` で、歩く・手をつなぐ、を確認しています。
 
-樹月・睦月は、`Main=itsuki` / `Sub=mutsuki` で、歩く・手をつなぐ、を確認しています。
+樹月・睦月は、`Main=itsuki` / `Sub=mutsuki` で、歩く・手をつなぐ、を確認しています。手をつなぐ瞬間に、
+顎の表示が崩れます。
 
 肌の色は、千歳の `human`、紗重の `blue` + 血の付いた着物、`ghost` + 首の痕 + 血の付いた着物、
 `ghost` + 痕なし + きれいな着物、繭の 6 着目の `ghost` を確認しています。
@@ -243,7 +244,8 @@ GitHub の Issue で教えてください。
   持っている千歳のモデルの作りで、Mod の不具合ではありません
 - 千歳の姿で手をつなぐと、つなぐ瞬間に一瞬だけ背が伸びて、すぐ戻ることがあります
 - **美也子は双子より背が高いです。** 美也子の姿で手をつなぐと、つなぐ瞬間に一瞬だけ表示が崩れます
-- **樹月・睦月も双子より背が高いです。** 美也子と同じく、双子の動きで地面に立てるように骨格を調整しています
+- **樹月・睦月も双子より背が高いです。** 美也子と同じく、双子の動きで地面に立てるように骨格を調整しています。
+  樹月・睦月の姿で手をつなぐと、つなぐ瞬間に顎の表示が崩れます
 - 2.1.0 では紗重と八重を取り違えていました。2.2.0 で直したので、`sae` / `yae` の見た目が
   2.1.0 とは逆になります（腰に縄を巻くだけの方が紗重、縄が長く垂れている方が八重）
 - 入れ替え用のデータ（`MixedNuts\cache\fdata_package\`、最大で約 100 MB）は、ローダーが
@@ -539,6 +541,7 @@ Chitose was checked walking, holding hands and aiming the camera with
 Miyako was checked walking and holding hands with `Main=miyako` / `Sub=mayu`.
 
 Itsuki and Mutsuki were checked walking and holding hands with `Main=itsuki` / `Sub=mutsuki`.
+At the moment the two take hands, the jaw is drawn broken.
 
 Of the skin tones, these were checked: Chitose's `human`; Sae's `blue` with the blood-stained
 kimono, `ghost` with the neck mark and the blood-stained kimono, and `ghost` with no mark and
@@ -592,7 +595,8 @@ the clean kimono; and `ghost` on Mayu's 6th costume.
 - **Miyako is taller than the twins.** With her look, her model is drawn distorted for a
   moment when the two take hands
 - **Itsuki and Mutsuki are taller than the twins too.** As with Miyako, their skeletons are
-  adjusted so that they stand on the ground with the twins' animations
+  adjusted so that they stand on the ground with the twins' animations. With their looks, the
+  jaw is drawn broken at the moment the two take hands
 - 2.1.0 had Sae and Yae the wrong way round. This is fixed in 2.2.0, so `sae` / `yae`
   look the other way round compared with 2.1.0 (Sae only has the rope tied around her
   waist; Yae's rope hangs down)
