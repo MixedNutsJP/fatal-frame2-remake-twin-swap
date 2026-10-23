@@ -51,17 +51,17 @@ using mixednuts::Utf8;
 using mixednuts::Wr;
 using mixednuts::file::ReadAt;
 
-constexpr char     kVersion[]  = "2.5.0";
-constexpr char     kCacheTag[] = "twinswap-v29";   // 生成ロジックを変えたら上げる
+constexpr char     kVersion[]  = "2.6.0";
+constexpr char     kCacheTag[] = "twinswap-v34";   // 生成ロジックを変えたら上げる
 constexpr uint32_t kFdataHash  = 0xFFFE7510;
 
 const wchar_t kRdb[] = L"fdata_package\\root.rdb";
 const wchar_t kRdx[] = L"fdata_package\\root.rdx";
 
 // 見た目の選択肢。ini の値もこの名前
-enum Look { kMio, kMayu, kSae, kYae, kChitose, kMiyako };
-const wchar_t* const kLookNames[] = {L"mio", L"mayu", L"sae", L"yae", L"chitose", L"miyako"};
-const char* const    kLookNamesA[] = {"mio", "mayu", "sae", "yae", "chitose", "miyako"};
+enum Look { kMio, kMayu, kSae, kYae, kChitose, kMiyako, kItsuki, kMutsuki };
+const wchar_t* const kLookNames[] = {L"mio", L"mayu", L"sae", L"yae", L"chitose", L"miyako", L"itsuki", L"mutsuki"};
+const char* const    kLookNamesA[] = {"mio", "mayu", "sae", "yae", "chitose", "miyako", "itsuki", "mutsuki"};
 
 bool g_enabled = true;
 Look g_main = kMayu;   // 操作キャラ（本編の澪）の見た目
@@ -124,7 +124,7 @@ constexpr float kChitoseDrop = 87.25f - 74.16f;
 // 美也子は逆に背が高く、腰の高さが 93.0。体を持ち上げる（下げる量が負）
 constexpr float kMiyakoDrop = 87.25f - 93.0f;
 
-// 紗重・八重・千歳は、モデルの写しを別のファイルに置いて使う。本来の紗重・八重・千歳（別の枠
+// 紗重・八重・千歳・美也子・樹月・睦月は、モデルの写しを別のファイルに置いて使う。本来の紗重・八重・千歳（別の枠
 // から同じモデルを使う）に影響させないため。置き場所は、見た目として使われていない双子の
 // 初期衣装（高精細・軽量）。双子の枠はすべてこの Mod が書き換えるので、そのモデル定義を指す枠は
 // 写しを使う見た目のものだけになる。
@@ -139,7 +139,7 @@ constexpr float kMiyakoDrop = 87.25f - 93.0f;
 // 識別子を写し元のものにしても変わらなかった）
 struct ModelFiles { uint32_t g1m, grp, mtl, oid, ktid, db; };
 
-// 写しを使う見た目（紗重・八重・千歳）1 人ぶん。files は高精細・軽量（紗重・八重は 1 体だけなので同じものを並べる）。
+// 写しを使う見た目（紗重・八重・千歳・美也子・樹月・睦月）1 人ぶん。files は高精細・軽量（紗重・八重は 1 体だけなので同じものを並べる）。
 // faceObj / handObj は、それぞれの ktid の中で顔と手足のテクスチャを指すオブジェクト。
 // faceG1t / handG1t は、そのテクスチャの実ファイル
 struct Extra {
@@ -164,6 +164,23 @@ const Extra kMiyakoExtra = {
 // 垂れた髪（0d609214）のグループ。双子のキャラは表示しないので、グループ 0 へ移す。
 // 目まわりの差分（1886e49e、2 番目のグループ）は、双子の 7f621c22 と同じ位置・同じ種類なので触らない
 const uint32_t kMiyakoGroups[] = {0x0D609214};
+// 立花樹月（定義 0x612179E6 / 軽量 0x8BF3ABDC）。腰の高さは 92.858 で、美也子と同じく体を持ち上げる。
+// 黒目（部品 566279A7 / 839112C6）がグループ f7d95e7f にあり、双子のキャラは表示しないので、グループ 0 へ移す
+// （このグループは ID 付きの差分の欄を持つ。MergeGroups が欄ごと移す）
+constexpr float kTachibanaDrop = 87.25f - 92.858f;
+const Extra kItsukiExtra = {
+    {{0x5551A2F0, 0x5C41346E, 0x558CBB2E, 0x474BDC69, 0xA26D498B, 0xD79ADDDA},
+     {0x8B2B0EBA, 0x921AA038, 0x8B6626F8, 0x7D254833, 0x27C15701, 0xCED43960}},
+    {}, {}, 0, 0};
+const uint32_t kItsukiGroups[] = {0xF7D95E7F};
+// 立花睦月（定義 0xF8A54DAE / 軽量 0xC93140E4。樹月と同じ骨格で、唇が青い）。黒目はグループ 0 にある。
+// 腰から下の外側（部品 B11BC661 / DE2D911C）がグループ 02bba84f に、足が 02c9bfd0 にあるので、
+// どちらもグループ 0 へ移す（双子のキャラはどちらも表示しない）
+const Extra kMutsukiExtra = {
+    {{0x68EC5C28, 0x6FDBEDA6, 0x69277466, 0x5AE695A1, 0x0229B753, 0x6A41BE12},
+     {0xE3984EB2, 0xEA87E030, 0xE3D366F0, 0xD592882B, 0xDCFC1609, 0x7A4FA8D8}},
+    {}, {}, 0, 0};
+const uint32_t kMutsukiGroups[] = {0x02BBA84F, 0x02C9BFD0};
 const Extra kChitoseExtra = {
     {{0x91C71644, 0x98B6A7C2, 0x92022E82, 0x83C14FBD, 0xF4A640B7, 0},
      {0x171B23BA, 0x1E0AB538, 0x17563BF8, 0x09155D33, 0x19D3E201, 0}},
@@ -189,7 +206,8 @@ const Home kMioHome = {
 
 const Extra& ExtraOf(Look look)
 {
-    return look == kSae ? kSaeExtra : look == kYae ? kYaeExtra : look == kMiyako ? kMiyakoExtra : kChitoseExtra;
+    return look == kSae ? kSaeExtra : look == kYae ? kYaeExtra : look == kMiyako ? kMiyakoExtra
+         : look == kItsuki ? kItsukiExtra : look == kMutsuki ? kMutsukiExtra : kChitoseExtra;
 }
 
 // 澪・繭の肌を幽霊の色にする。顔のテクスチャが千歳・紗重と同じ形式・配置（BC1、2048 角）の
@@ -219,7 +237,7 @@ const GhostTextures kGhostPlain = {0xE9BC216F, 0x96A6308F, 0x4608F425, 0xF8F25E9
 bool SkinChanged(Look look) { return look == kChitose && g_chitoseHuman; }
 
 // 写しを使う見た目か
-bool UsesCopy(Look look) { return look == kSae || look == kYae || look == kChitose || look == kMiyako; }
+bool UsesCopy(Look look) { return look >= kSae; }
 
 // 写しの置き場所。空いている双子を繭、澪の順に、Main、Sub の順で割り当てる。
 // 写しを使う見た目が 2 種類なら双子は 2 人とも空いていて、1 種類なら少なくとも 1 人は空いている
@@ -459,6 +477,17 @@ bool MergeGroups(File& g1m, File& grp, const uint32_t* names, size_t count)
     if (gd.size() < 64 || gd.size() % 32) return false;
     const size_t groups = gd.size() / 32;
 
+    // 差分（ID 付き）の数の欄（+0x0C / +0x10 / +0x18 / +0x1C）。その部品は grp に属さない末尾にある。
+    // 欄を使うグループが 1 つだけで、それが移すグループなら、欄ごとグループ 0 へ移す
+    // （樹月の黒目のグループ。同じ骨格の別の姿のモデルは、この形でグループ 0 に持っている）
+    auto extra = [&](size_t i) {
+        const uint8_t* r = &gd[i * 32];
+        return Rd<uint32_t>(r + 0x0C) || Rd<uint32_t>(r + 0x10) || Rd<uint32_t>(r + 0x18) || Rd<uint32_t>(r + 0x1C);
+    };
+    size_t withExtra = 0, extraGroup = 0;
+    for (size_t i = 0; i < groups; ++i)
+        if (extra(i)) { ++withExtra; extraGroup = i; }
+
     std::vector<size_t> first(groups), nent(groups);
     std::vector<bool> move(groups, false);
     size_t total = 0, moving = 0;
@@ -470,9 +499,7 @@ bool MergeGroups(File& g1m, File& grp, const uint32_t* names, size_t count)
         for (size_t k = 0; k < count; ++k)
             if (i > 0 && Rd<uint32_t>(r) == names[k]) move[i] = true;
         if (!move[i]) continue;
-        // 差分（ID 付き）の数の欄が使われているグループは扱わない
-        if (Rd<uint32_t>(r + 0x0C) || Rd<uint32_t>(r + 0x10) || Rd<uint32_t>(r + 0x18) ||
-            Rd<uint32_t>(r + 0x1C))
+        if (extra(i) && withExtra != 1)
         {
             Log("[NG] grp 0x%08X: group %zu has fields this mod does not handle", grp.hash, i);
             return false;
@@ -519,6 +546,12 @@ bool MergeGroups(File& g1m, File& grp, const uint32_t* names, size_t count)
         Wr<uint32_t>(&gd[0x14], Rd<uint32_t>(&gd[0x14]) + Rd<uint32_t>(r + 0x14));
         Wr<uint32_t>(r + 0x08, 0);
         Wr<uint32_t>(r + 0x14, 0);
+        if (g == extraGroup && withExtra == 1)
+            for (size_t f : {0x0C, 0x10, 0x18, 0x1C})
+            {
+                Wr<uint32_t>(&gd[f], Rd<uint32_t>(r + f));
+                Wr<uint32_t>(r + f, 0);
+            }
     }
     return true;
 }
@@ -990,8 +1023,8 @@ bool Generate()
         if (merged) files.push_back(std::move(grp));
         ++fixed;
     }
-    // 紗重・八重・千歳
-    for (Look look : {kSae, kYae, kChitose, kMiyako})
+    // 紗重・八重・千歳・美也子・樹月・睦月
+    for (Look look : {kSae, kYae, kChitose, kMiyako, kItsuki, kMutsuki})
     {
         if (g_main != look && g_sub != look) continue;
         // モデルの写しを、使っていない双子の初期衣装に置く。
@@ -1010,9 +1043,9 @@ bool Generate()
             for (int n = 0; n < 5; ++n)
                 if (!ReadEntry(src, pairs[n][0], copy[n]) || !ReadEntry(src, pairs[n][1], dest[n]))
                     return false;
-            if (look == kChitose || look == kMiyako)
+            if (look == kChitose || look >= kMiyako)
             {
-                if (!FitSkeleton(copy[0], look == kChitose ? kChitoseDrop : kMiyakoDrop))
+                if (!FitSkeleton(copy[0], look == kChitose ? kChitoseDrop : look == kMiyako ? kMiyakoDrop : kTachibanaDrop))
                 {
                     Log("[NG] g1m 0x%08X: could not fit the skeleton", from.g1m);
                     return false;
@@ -1020,6 +1053,12 @@ bool Generate()
                 if (look == kMiyako && !MergeGroups(copy[0], copy[1], kMiyakoGroups,
                                                   sizeof(kMiyakoGroups) / sizeof(kMiyakoGroups[0])))
                     Log("[NG] Could not show the hair of %s", kLookNamesA[look]);
+                if (look == kItsuki && !MergeGroups(copy[0], copy[1], kItsukiGroups,
+                                                  sizeof(kItsukiGroups) / sizeof(kItsukiGroups[0])))
+                    Log("[NG] Could not show the eyes of %s", kLookNamesA[look]);
+                if (look == kMutsuki && !MergeGroups(copy[0], copy[1], kMutsukiGroups,
+                                                   sizeof(kMutsukiGroups) / sizeof(kMutsukiGroups[0])))
+                    Log("[NG] Could not show the lower body of %s", kLookNamesA[look]);
             }
             // 縄: 表示するなら、縄のグループを常時表示のグループ 0 へ移す（双子のキャラはこの 2 つを
             // 表示しない）。表示しないなら、縄の部品を描画されないようにする（移さないだけだと、
@@ -1230,9 +1269,9 @@ int GenerateSwap(void*, const MixedNutsPatchIo* io, char* note, size_t cap)
 Look ReadLook(const std::wstring& ini, const wchar_t* key, Look def, Look own)
 {
     const std::wstring s = mixednuts::ini::String(ini, L"Swap", key, kLookNames[def]);
-    for (int i = kMio; i <= kMiyako; ++i)
+    for (int i = kMio; i <= kMutsuki; ++i)
         if (_wcsicmp(s.c_str(), kLookNames[i]) == 0) return static_cast<Look>(i);
-    Log("[NG] [Swap] %s=%s is not mio, mayu, sae, yae, chitose or miyako; keeping the original look (%s)",
+    Log("[NG] [Swap] %s=%s is not mio, mayu, sae, yae, chitose, miyako, itsuki or mutsuki; keeping the original look (%s)",
         Utf8(key).c_str(), Utf8(s).c_str(), kLookNamesA[own]);
     return own;
 }

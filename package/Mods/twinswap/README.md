@@ -21,6 +21,7 @@ GitHub: https://github.com/MixedNutsJP/fatal-frame2-remake-mod-loader
 繭を操作して澪を連れて歩く、二人とも繭、二人とも澪、の 3 通りを設定ファイルで選べます。
 2.1.0 からは、**黒澤紗重・黒澤八重**の姿も選べます（例：紗重を操作して八重を連れて歩く）。
 2.4.0 からは、**立花千歳**の姿も選べます。2.5.0 からは、**須藤美也子**の姿も選べます。
+2.6.0 からは、**立花樹月・立花睦月**の姿も選べます。
 紗重・八重・千歳・澪・繭は、肌の色（生きている人の肌 / 幽霊の肌）も選べます。
 
 入れ替わるのはモデル（顔・髪・体・衣装）だけです。動き・声・字幕・ストーリーは
@@ -122,7 +123,7 @@ Native120FPSOption（`dinput8.dll` + `Mods\native120fps\`）や MouseWheelCamera
 
 | 項目 | 意味 |
 |---|---|
-| `Main` | 操作キャラ（本編の澪）の見た目。`mio`（澪）/ `mayu`（繭）/ `sae`（紗重）/ `yae`（八重）/ `chitose`（千歳）/ `miyako`（美也子）。既定値 `mayu` |
+| `Main` | 操作キャラ（本編の澪）の見た目。`mio`（澪）/ `mayu`（繭）/ `sae`（紗重）/ `yae`（八重）/ `chitose`（千歳）/ `miyako`（美也子）/ `itsuki`（樹月）/ `mutsuki`（睦月）。既定値 `mayu` |
 | `Sub` | 同行キャラ（本編の繭）の見た目。値は `Main` と同じ。既定値 `mio` |
 | `Rope` | 紗重・八重の赤い縄。`1` = 表示（既定）/ `0` = 非表示 |
 | `Blindfold` | 澪の 2 着目（夏のカーディガン）の目隠し。`default` = ゲームのまま（既定）/ `show` = 常に表示 / `hide` = 常に非表示 |
@@ -144,9 +145,10 @@ Native120FPSOption（`dinput8.dll` + `Mods\native120fps\`）や MouseWheelCamera
 | `yae` | `sae` | 八重を操作して紗重を連れて歩く |
 | `chitose` | `mayu` | 千歳を操作して繭を連れて歩く |
 | `miyako` | `mayu` | 美也子を操作して繭を連れて歩く |
+| `itsuki` | `mutsuki` | 樹月を操作して睦月を連れて歩く |
 
-`sae` / `yae` / `chitose` / `miyako` は、`mio` / `mayu` と自由に組み合わせられます（例：`Main=mio` / `Sub=sae`）。
-`mio` / `mayu` / `sae` / `yae` / `chitose` / `miyako` 以外の値を書いた場合は、そのキャラ本来の見た目のままになります。
+`sae` / `yae` / `chitose` / `miyako` / `itsuki` / `mutsuki` は、`mio` / `mayu` と自由に組み合わせられます（例：`Main=mio` / `Sub=sae`）。
+`mio` / `mayu` / `sae` / `yae` / `chitose` / `miyako` / `itsuki` / `mutsuki` 以外の値を書いた場合は、そのキャラ本来の見た目のままになります。
 
 ## 衣装の対応
 
@@ -169,6 +171,8 @@ Native120FPSOption（`dinput8.dll` + `Mods\native120fps\`）や MouseWheelCamera
 - **千歳も着物の 1 着だけです。** `chitose` を指定したキャラは、衣装メニューでどの衣装を
   選んでもその姿になります（澪の 8 着目を除く）
 - **美也子もブラウスとスカートの 1 着だけです。** `miyako` を指定したキャラは、衣装メニューで
+  どの衣装を選んでもその姿になります（澪の 8 着目を除く）
+- **樹月・睦月も着物の 1 着ずつだけです。** `itsuki` / `mutsuki` を指定したキャラは、衣装メニューで
   どの衣装を選んでもその姿になります（澪の 8 着目を除く）
 
 ### ゲーム内での動作確認の範囲
@@ -193,6 +197,8 @@ GitHub の Issue で教えてください。
 射影機を構える、を確認しています。
 
 美也子は、`Main=miyako` / `Sub=mayu` で、歩く・手をつなぐ、を確認しています。
+
+樹月・睦月は、`Main=itsuki` / `Sub=mutsuki` で、歩く・手をつなぐ、を確認しています。
 
 肌の色は、千歳の `human`、紗重の `blue` + 血の付いた着物、`ghost` + 首の痕 + 血の付いた着物、
 `ghost` + 痕なし + きれいな着物、繭の 6 着目の `ghost` を確認しています。
@@ -229,14 +235,15 @@ GitHub の Issue で教えてください。
     絵柄を使うようにしました）
 - **既知の不具合：紗重・八重の着物の袖が、立ち止まっていてもなびき続けることがあります。**
   肌の色の設定によらず起き、原因は分かっていません
-- 紗重・八重・千歳・美也子の姿、縄の表示、紗重・八重・千歳の肌の色を選んでも、本編に登場する
-  紗重・八重・千歳・美也子には影響しません（Mod はモデルの写しを別に用意して使います）。2.3.0 までは、`sae` / `yae` を選び
+- 紗重・八重・千歳・美也子・樹月・睦月の姿、縄の表示、紗重・八重・千歳の肌の色を選んでも、本編に登場する
+  紗重・八重・千歳・美也子・樹月・睦月には影響しません（Mod はモデルの写しを別に用意して使います）。2.3.0 までは、`sae` / `yae` を選び
   `Rope=1` にすると、イベントで登場する紗重・八重の縄も常に表示されていましたが、2.4.0 で
   解消しました
 - **千歳は双子より背が低く、モデルに足がありません。** 裾の下に何も描かれないのは、ゲームが
   持っている千歳のモデルの作りで、Mod の不具合ではありません
 - 千歳の姿で手をつなぐと、つなぐ瞬間に一瞬だけ背が伸びて、すぐ戻ることがあります
 - **美也子は双子より背が高いです。** 美也子の姿で手をつなぐと、つなぐ瞬間に一瞬だけ表示が崩れます
+- **樹月・睦月も双子より背が高いです。** 美也子と同じく、双子の動きで地面に立てるように骨格を調整しています
 - 2.1.0 では紗重と八重を取り違えていました。2.2.0 で直したので、`sae` / `yae` の見た目が
   2.1.0 とは逆になります（腰に縄を巻くだけの方が紗重、縄が長く垂れている方が八重）
 - 入れ替え用のデータ（`MixedNuts\cache\fdata_package\`、最大で約 100 MB）は、ローダーが
@@ -280,7 +287,7 @@ GitHub の Issue で教えてください。
 `twinswap.log`：
 
 ```
-TwinSwap 2.5.0  Main=mayu Sub=mio Rope=1 Blindfold=default
+TwinSwap 2.6.0  Main=mayu Sub=mio Rope=1 Blindfold=default
 [OK] Registered with the loader
 [OK] Generated the swap data (...)
 ```
@@ -322,9 +329,11 @@ https://github.com/MixedNutsJP/fatal-frame2-remake-twin-swap/issues
 紗重・八重のモデルは、赤い縄を澪・繭に無い表示グループに置いていて、澪・繭のキャラは
 このグループを表示しません。顔と同じ方法で、縄を常時表示のグループへ移します。
 
-紗重・八重・千歳・美也子は、本編にも登場するので、モデルの写しを作って使います。
+紗重・八重・千歳・美也子・樹月・睦月は、本編にも登場するので、モデルの写しを作って使います。
 写しは、見た目として使っていない方の双子の初期衣装のファイルに置きます。千歳は体が小さく、
-美也子は背が高いので、写しの骨格を双子の動きに合わせて調整します。
+美也子・樹月・睦月は背が高いので、写しの骨格を双子の動きに合わせて調整します。
+美也子の垂れた髪、樹月の黒目、睦月の腰から下も、澪・繭のキャラが表示しないグループに
+あるので、常時表示のグループへ移します。
 
 肌の色は、2 つの方法で変えます。千歳の人間の肌と、澪・繭の幽霊の肌は、顔と体のテクスチャに、
 別のキャラの肌の色味を移したものを起動時に作ります（千歳には紗重の、澪・繭には千歳の色味）。
@@ -347,7 +356,7 @@ Mod や、先に適用されたローダーの Mod の変更を含む）をこ�
 **Swaps the looks of the player character (Mio) and the companion (Mayu).**
 In the config file you can choose between playing as Mayu with Mio at your side,
 two Mayus, or two Mios. From 2.1.0, **Sae and Yae Kurosawa** can be chosen too
-(for example, play as Sae with Yae at your side). From 2.4.0, so can **Chitose Tachibana**, and from 2.5.0 **Miyako Sudo**. Skin tones (living or ghostly) can be chosen for
+(for example, play as Sae with Yae at your side). From 2.4.0, so can **Chitose Tachibana**, from 2.5.0 **Miyako Sudo**, and from 2.6.0 **Itsuki and Mutsuki Tachibana**. Skin tones (living or ghostly) can be chosen for
 Sae, Yae, Chitose, Mio and Mayu.
 
 Only the models (face, hair, body and costume) change. Animations, voices, subtitles
@@ -450,7 +459,7 @@ To disable temporarily, set `Enabled` to `0` in `twinswap.ini`.
 
 | Key | Meaning |
 |---|---|
-| `Main` | Look of the player character (Mio in the story). `mio` / `mayu` / `sae` / `yae` / `chitose` / `miyako`. Default `mayu` |
+| `Main` | Look of the player character (Mio in the story). `mio` / `mayu` / `sae` / `yae` / `chitose` / `miyako` / `itsuki` / `mutsuki`. Default `mayu` |
 | `Sub` | Look of the companion (Mayu in the story). Same values as `Main`. Default `mio` |
 | `Rope` | Sae's and Yae's red rope. `1` = show (default) / `0` = hide |
 | `Blindfold` | The blindfold on Mio's 2nd costume (summer cardigan). `default` = as the game does (default) / `show` = always shown / `hide` = never shown |
@@ -472,9 +481,10 @@ To disable temporarily, set `Enabled` to `0` in `twinswap.ini`.
 | `yae` | `sae` | play as Yae with Sae at your side |
 | `chitose` | `mayu` | play as Chitose with Mayu at your side |
 | `miyako` | `mayu` | play as Miyako with Mayu at your side |
+| `itsuki` | `mutsuki` | play as Itsuki with Mutsuki at your side |
 
-`sae` / `yae` / `chitose` / `miyako` can be combined freely with `mio` / `mayu` (for example `Main=mio` / `Sub=sae`).
-Any value other than `mio` / `mayu` / `sae` / `yae` / `chitose` / `miyako` leaves that character's original look.
+`sae` / `yae` / `chitose` / `miyako` / `itsuki` / `mutsuki` can be combined freely with `mio` / `mayu` (for example `Main=mio` / `Sub=sae`).
+Any value other than `mio` / `mayu` / `sae` / `yae` / `chitose` / `miyako` / `itsuki` / `mutsuki` leaves that character's original look.
 
 ## Costume pairing
 
@@ -500,6 +510,8 @@ her 2nd costume, the player character appears as Mayu in Mayu's 2nd costume.
   like her whichever costume is selected (except Mio's 8th)
 - **Miyako also has a single outfit (her blouse and skirt).** A character set to `miyako`
   looks like her whichever costume is selected (except Mio's 8th)
+- **Itsuki and Mutsuki also have a single outfit each (their kimono).** A character set to
+  `itsuki` / `mutsuki` looks like him whichever costume is selected (except Mio's 8th)
 
 ### What has been checked in game
 
@@ -525,6 +537,8 @@ Chitose was checked walking, holding hands and aiming the camera with
 `Main=chitose` / `Sub=chitose` and `Main=chitose` / `Sub=mayu`.
 
 Miyako was checked walking and holding hands with `Main=miyako` / `Sub=mayu`.
+
+Itsuki and Mutsuki were checked walking and holding hands with `Main=itsuki` / `Sub=mutsuki`.
 
 Of the skin tones, these were checked: Chitose's `human`; Sae's `blue` with the blood-stained
 kimono, `ghost` with the neck mark and the blood-stained kimono, and `ghost` with no mark and
@@ -566,7 +580,7 @@ the clean kimono; and `ghost` on Mayu's 6th costume.
     that is in the game)
 - **Known issue: the sleeves of Sae's and Yae's kimono may keep swaying even while
   standing still.** It happens whatever the skin setting, and the cause is not known
-- Choosing the looks of Sae, Yae, Chitose and Miyako, hiding the rope or changing the skin
+- Choosing the looks of Sae, Yae, Chitose, Miyako, Itsuki and Mutsuki, hiding the rope or changing the skin
   tones of Sae, Yae and Chitose does not affect the ones who appear in the story (the mod works on its own
   copies of their models). Up to 2.3.0, with `sae` / `yae` selected and `Rope=1`, the Sae
   and Yae who appear in events also always showed the whole red rope; 2.4.0 no longer does
@@ -577,6 +591,8 @@ the clean kimono; and `ghost` on Mayu's 6th costume.
   goes back
 - **Miyako is taller than the twins.** With her look, her model is drawn distorted for a
   moment when the two take hands
+- **Itsuki and Mutsuki are taller than the twins too.** As with Miyako, their skeletons are
+  adjusted so that they stand on the ground with the twins' animations
 - 2.1.0 had Sae and Yae the wrong way round. This is fixed in 2.2.0, so `sae` / `yae`
   look the other way round compared with 2.1.0 (Sae only has the rope tied around her
   waist; Yae's rope hangs down)
@@ -622,7 +638,7 @@ If the logs contain lines like these, the mod is working:
 `twinswap.log`:
 
 ```
-TwinSwap 2.5.0  Main=mayu Sub=mio Rope=1 Blindfold=default
+TwinSwap 2.6.0  Main=mayu Sub=mio Rope=1 Blindfold=default
 [OK] Registered with the loader
 [OK] Generated the swap data (...)
 ```
@@ -667,10 +683,12 @@ Sae's and Yae's models keep the red rope in display groups that Mio's and Mayu's
 models do not have, so the twins never show them. The mod moves the rope into the
 always-visible group in the same way as the face.
 
-Sae, Yae, Chitose and Miyako also appear in the story, so the mod works on copies of
-their models, kept in the default costume files of whichever twin's look is not in use.
-Chitose is small and Miyako is tall, so the skeletons of their copies are adjusted to the
-twins' animations.
+Sae, Yae, Chitose, Miyako, Itsuki and Mutsuki also appear in the story, so the mod works on
+copies of their models, kept in the default costume files of whichever twin's look is not in use.
+Chitose is small and Miyako, Itsuki and Mutsuki are tall, so the skeletons of their copies are
+adjusted to the twins' animations. Miyako's loose hair, Itsuki's pupils and Mutsuki's lower body
+are also in groups the twins' characters do not show, so they are moved into the always-visible
+group as well.
 
 Skin tones are changed in two ways. For Chitose's living skin and Mio's and Mayu's ghost
 skin, the face and body textures are rebuilt at startup with another character's skin tone

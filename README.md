@@ -5,14 +5,14 @@ A mod for FATAL FRAME / PROJECT ZERO II: Crimson Butterfly REMAKE (Steam, AppID 
 
 操作キャラ（澪）と同行キャラ（繭）の**見た目を入れ替えます**。繭を操作して澪を連れて歩く、
 二人とも繭、二人とも澪、の 3 通りを設定ファイルで選べます。2.1.0 からは**黒澤紗重・黒澤八重**、
-2.4.0 からは**立花千歳**、2.5.0 からは**須藤美也子**の姿も選べます。紗重・八重・千歳・澪・繭は、
+2.4.0 からは**立花千歳**、2.5.0 からは**須藤美也子**、2.6.0 からは**立花樹月・立花睦月**の姿も選べます。紗重・八重・千歳・澪・繭は、
 肌の色（生きている人の肌 / 幽霊の肌）も選べます。
 入れ替わるのはモデル（顔・髪・体・衣装）だけで、動き・声・字幕・ストーリーは元のままです。
 
 **Swaps the looks of the player character (Mio) and the companion (Mayu).** Play as Mayu
 with Mio at your side, or make both twins Mayu or both Mio, chosen in a config file.
-From 2.1.0, **Sae and Yae Kurosawa** can be chosen too, from 2.4.0 **Chitose Tachibana**, and
-from 2.5.0 **Miyako Sudo**. Skin tones (living or ghostly) can be chosen for Sae, Yae, Chitose,
+From 2.1.0, **Sae and Yae Kurosawa** can be chosen too, from 2.4.0 **Chitose Tachibana**,
+from 2.5.0 **Miyako Sudo**, and from 2.6.0 **Itsuki and Mutsuki Tachibana**. Skin tones (living or ghostly) can be chosen for Sae, Yae, Chitose,
 Mio and Mayu.
 Only the models (face, hair, body and costume) change; animations, voices, subtitles
 and the story stay as they are.
@@ -88,7 +88,7 @@ at 1.x, update them all at once; see the loader's README for details. You may co
 
 | 項目 / Key | 意味 / Meaning |
 |---|---|
-| `Main` | 操作キャラ（本編の澪）の見た目。`mio` / `mayu` / `sae` / `yae` / `chitose` / `miyako`、既定 `mayu` / Look of the player character (Mio in the story). Default `mayu` |
+| `Main` | 操作キャラ（本編の澪）の見た目。`mio` / `mayu` / `sae` / `yae` / `chitose` / `miyako` / `itsuki` / `mutsuki`、既定 `mayu` / Look of the player character (Mio in the story). Default `mayu` |
 | `Sub` | 同行キャラ（本編の繭）の見た目。値は `Main` と同じ、既定 `mio` / Look of the companion (Mayu in the story). Same values, default `mio` |
 | `Rope` | 紗重・八重の赤い縄。`1` = 表示（既定）/ `0` = 非表示 / Sae's and Yae's red rope. `1` = show (default) / `0` = hide |
 | `Blindfold` | 澪の 2 着目（夏のカーディガン）の目隠し。`default` = ゲームのまま（既定）/ `show` = 常に表示 / `hide` = 常に非表示 / The blindfold on Mio's 2nd costume (summer cardigan). `default` = as the game does (default) / `show` = always shown / `hide` = never shown |
@@ -109,9 +109,10 @@ at 1.x, update them all at once; see the loader's README for details. You may co
 | `sae` | `yae` | 紗重を操作して八重を連れて歩く / play as Sae with Yae at your side |
 | `chitose` | `mayu` | 千歳を操作して繭を連れて歩く / play as Chitose with Mayu at your side |
 | `miyako` | `mayu` | 美也子を操作して繭を連れて歩く / play as Miyako with Mayu at your side |
+| `itsuki` | `mutsuki` | 樹月を操作して睦月を連れて歩く / play as Itsuki with Mutsuki at your side |
 
-`sae` / `yae` / `chitose` / `miyako` は `mio` / `mayu` と自由に組み合わせられます。
-`sae` / `yae` / `chitose` / `miyako` can be combined freely with `mio` / `mayu`.
+`sae` / `yae` / `chitose` / `miyako` / `itsuki` / `mutsuki` は `mio` / `mayu` と自由に組み合わせられます。
+`sae` / `yae` / `chitose` / `miyako` / `itsuki` / `mutsuki` can be combined freely with `mio` / `mayu`.
 
 肌や着物の設定はキャラごとで、`Main` / `Sub` ごとではありません（二人とも紗重にすると、二人とも
 同じ肌・同じ着物になります）。
@@ -189,6 +190,14 @@ Costumes are paired one-to-one in costume menu order (Mio's nth ↔ Mayu's nth).
   stand on the ground with the twins' animations. Walking and holding hands were checked with
   `miyako` / `mayu`. For a moment when the two take hands, her model is drawn distorted. The
   Miyako who appears in the story is not affected.
+- **樹月・睦月は着物の 1 着ずつだけです**（2.6.0）。どの衣装を選んでもその姿になります
+  （澪の 8 着目を除く）。二人とも双子より背が高いので、美也子と同じく骨格を調整しています。
+  `itsuki` / `mutsuki` で、歩く・手をつなぐ、を確認しています。本編に登場する樹月・睦月には
+  影響しません。
+  **Itsuki and Mutsuki have a single outfit each (their kimono)** (2.6.0), shown whichever
+  costume is selected (except Mio's 8th). Both are taller than the twins, so their skeletons
+  are adjusted as Miyako's is. Walking and holding hands were checked with `itsuki` /
+  `mutsuki`. The Itsuki and Mutsuki who appear in the story are not affected.
 - **肌の色を選べます。** 変わるのは肌（と、紗重・八重では着物）のテクスチャだけで、モデルの形は
   変わりません。本編に登場する千歳・紗重・八重には影響しません。
   - **千歳**: `ChitoseSkin=human` で、生きている人の肌色になります（2.4.0）。紗重の肌の色味を移して
@@ -424,6 +433,22 @@ Miyako has a single model (g1m `0xAEF9D214`), used through a copy like Chitose's
 is laid out like Chitose's, but the hip is higher than the twins' (93.0), so the same
 adjustment is applied the other way round to raise the body. Her hanging hair sits in a group
 the twins' characters do not show, so it is moved into the always-visible group.
+
+### 樹月・睦月 / Itsuki and Mutsuki
+
+樹月（g1m `0x5551A2F0`、軽量 `0x8B2B0EBA`）と睦月（g1m `0x68EC5C28`、軽量 `0xE3984EB2`）は、
+同じ作りの骨格で、腰の高さは 92.858 です。美也子と同じ調整で体を持ち上げます。
+双子のキャラが表示しないグループにある部品を、常時表示のグループへ移します。樹月は黒目、
+睦月は腰から下の外側と足です。樹月の黒目のグループは、ID 付きの差分の数を持っています
+（その部品はグループの並びの後ろにあります）。この数も一緒にグループ 0 へ移します。
+睦月のモデルは、はじめからこの形でグループ 0 に持っています。
+
+Itsuki (g1m `0x5551A2F0`, low detail `0x8B2B0EBA`) and Mutsuki (g1m `0x68EC5C28`, low detail
+`0xE3984EB2`) share a skeleton layout with the hip at 92.858, raised with the same adjustment
+as Miyako's. Parts in groups the twins' characters do not show are moved into the
+always-visible group: Itsuki's pupils, and Mutsuki's outer lower body and legs. Itsuki's pupil
+group carries a count of ID'd variant entries (those parts sit after the groups); the count is
+moved to group 0 along with it, the layout Mutsuki's model already has.
 
 ### 肌の色 / Skin tone
 

@@ -124,6 +124,14 @@ EXTRA = {
     'miyako': dict(files=[(0xaef9d214, 0xb5e96392, 0xaf34ea52, 0xa0f40b8d, 0x7dcafee7)] * 2, db=0x86e670fe,
                  drop=struct.unpack('<f', struct.pack('<f', struct.unpack('<f', struct.pack('<f', 87.25))[0] - 93.0))[0],
                  groups=(0x0d609214,)),
+    # 立花樹月（定義 0x612179e6 / 軽量 0x8bf3abdc）。腰 92.858。黒目のグループを常時表示に
+    'itsuki': dict(files=[(0x5551a2f0, 0x5c41346e, 0x558cbb2e, 0x474bdc69, 0xa26d498b),
+                          (0x8b2b0eba, 0x921aa038, 0x8b6626f8, 0x7d254833, 0x27c15701)],
+                   dbs=(0xd79addda, 0xced43960), groups=(0xf7d95e7f,)),
+    # 立花睦月（定義 0xf8a54dae / 軽量 0xc93140e4）。腰から下の外側と足のグループを常時表示に
+    'mutsuki': dict(files=[(0x68ec5c28, 0x6fdbeda6, 0x69277466, 0x5ae695a1, 0x0229b753),
+                        (0xe3984eb2, 0xea87e030, 0xe3d366f0, 0xd592882b, 0xdcfc1609)],
+                 dbs=(0x6a41be12, 0x7a4fa8d8), groups=(0x02bba84f, 0x02c9bfd0)),
     'chitose': dict(files=[(0x91c71644, 0x98b6a7c2, 0x92022e82, 0x83c14fbd, 0xf4a640b7),
                            (0x171b23ba, 0x1e0ab538, 0x17563bf8, 0x09155d33, 0x19d3e201)],
                     objs=[(0xd90f8a1f, 0x8708793f), (0xddaf9a77, 0x396ad757)],
@@ -251,8 +259,11 @@ def merge_groups(g1m, grp, names):
     assert len(grp) % 32 == 0
     move = [i for i, r in enumerate(rows) if r[0] in names]
     assert move and 0 not in move, 'groups not found'
+    # 差分（ID 付き）の数の欄（3, 4, 6, 7 番目）。使うグループが 1 つだけで、それが移すグループなら、
+    # 欄ごとグループ 0 へ移す（樹月の黒目のグループ）
+    extra = [i for i, r in enumerate(rows) if r[3] or r[4] or r[6] or r[7]]
     for i in move:
-        assert rows[i][3] == rows[i][4] == rows[i][6] == rows[i][7] == 0, 'unexpected grp fields'
+        assert i not in extra or len(extra) == 1, 'unexpected grp fields'
     g1m = bytearray(g1m)
     p = g1mg_section(g1m, 0x10009)
     q, ents = p + 0x30, []
@@ -277,6 +288,9 @@ def merge_groups(g1m, grp, names):
         rows[0][2] += rows[i][2]
         rows[0][5] += rows[i][5]
         rows[i][2] = rows[i][5] = 0
+        if i in extra:
+            for f in (3, 4, 6, 7):
+                rows[0][f], rows[i][f] = rows[i][f], 0
     return bytes(g1m), b''.join(struct.pack('<8I', *r) for r in rows)
 
 
@@ -356,7 +370,7 @@ def build(folder, rdb, rdx, main, sub, rope=True, blindfold='default', chitose_s
         files.append((g1m_h, g1m, g1m_meta))
         if names:
             files.append((grp_h, grp, grp_meta))
-    for look in ('sae', 'yae', 'chitose', 'miyako'):
+    for look in ('sae', 'yae', 'chitose', 'miyako', 'itsuki', 'mutsuki'):
         if look not in (main, sub):
             continue
         # モデルの写しを、使っていない双子の初期衣装に置く。
@@ -367,6 +381,11 @@ def build(folder, rdb, rdx, main, sub, rope=True, blindfold='default', chitose_s
             data = [read_entry(folder, rdb, rdx, h)[0] for h in ex['files'][k]]
             if look == 'chitose':
                 data[0] = fit_chitose(data[0])
+            elif look in ('itsuki', 'mutsuki'):
+                data[0] = fit_chitose(data[0], struct.unpack('<f', struct.pack('<f', struct.unpack('<f', struct.pack('<f', 87.25))[0]
+                                                                     - struct.unpack('<f', struct.pack('<f', 92.858))[0]))[0])
+                if 'groups' in ex:
+                    data[0], data[1] = merge_groups(data[0], data[1], ex['groups'])
             elif look == 'miyako':
                 data[0] = fit_chitose(data[0], ex['drop'])
                 data[0], data[1] = merge_groups(data[0], data[1], ex['groups'])
@@ -387,11 +406,12 @@ def build(folder, rdb, rdx, main, sub, rope=True, blindfold='default', chitose_s
                     data[4] = replace_object(data[4], obj, slot_obj)
             for h, d in zip(home['files'][k], data):
                 files.append((h, d, read_entry(folder, rdb, rdx, h)[1]))
-            if 'db' in ex:   # 識別子（+0x14）とオブジェクトの名前（+0x28）は置き場所のものにする
-                db = bytearray(read_entry(folder, rdb, rdx, ex['db'])[0])
+            src_db = ex['dbs'][k] if 'dbs' in ex else ex.get('db')   # dbs: 高精細・軽量で別のもの
+            if src_db:   # 識別子（+0x14）とオブジェクトの名前（+0x28）は置き場所のものにする
+                db = bytearray(read_entry(folder, rdb, rdx, src_db)[0])
                 home_db, meta = read_entry(folder, rdb, rdx, home['dbs'][k])
                 assert db[:4] == b'_DOK' and db[0x1c:0x20] == b'IDOK'
-                assert struct.unpack_from('<I', db, 0x28)[0] == ex['db']
+                assert struct.unpack_from('<I', db, 0x28)[0] == src_db
                 assert struct.unpack_from('<I', home_db, 0x28)[0] == home['dbs'][k]
                 db[0x14:0x18] = home_db[0x14:0x18]
                 struct.pack_into('<I', db, 0x28, home['dbs'][k])
